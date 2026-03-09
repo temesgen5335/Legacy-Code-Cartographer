@@ -2,29 +2,78 @@ import os
 import sys
 from pathlib import Path
 from src.graph.knowledge_graph import KnowledgeGraph
+from src.models.nodes import ModuleNode
 from src.agents.surveyor import SurveyorAgent
 from src.agents.hydrologist import HydrologistAgent
 from src.agents.semanticist import SemanticistAgent
 from src.agents.archivist import ArchivistAgent
+from src.analyzers.semantic_index import SemanticIndex
+import subprocess
+from urllib.parse import urlparse
+from dotenv import load_dotenv
 
-def main(target_path: str):
+load_dotenv()
+
+def clone_github_repo(url: str) -> Path:
+    """Clones a GitHub repo into targets/ and returns the local path."""
+    parsed = urlparse(url)
+    repo_name = parsed.path.strip("/").replace("/", "_")
+    target_dir = Path("targets") / repo_name
+    
+    if not target_dir.exists():
+        print(f"Cloning {url} into {target_dir}...")
+        subprocess.run(["git", "clone", "--depth", "1", url, str(target_dir)], check=True)
+    else:
+        print(f"Repo already exists at {target_dir}")
+    
+    return target_dir
+
+def main(path_or_url: str):
+    # Detect if it's a URL
+    if path_or_url.startswith("http"):
+        target_path = clone_github_repo(path_or_url)
+    else:
+        target_path = Path(path_or_url)
+    
+    project_name = target_path.name
+    output_base = Path(".cartography") / project_name
+    output_base.mkdir(parents=True, exist_ok=True)
+
     print(f"Starting Cartography on: {target_path}")
     kg = KnowledgeGraph()
     
     # 1. Surveyor (Structure)
     print("Phase 1: Surveyor Analysis...")
-    surveyor = SurveyorAgent(target_path, kg)
+    surveyor = SurveyorAgent(str(target_path), kg)
     surveyor.analyze_all()
     
     # 2. Hydrologist (Lineage)
     print("Phase 2: Hydrologist Analysis...")
-    hydrologist = HydrologistAgent(target_path, kg)
+    hydrologist = HydrologistAgent(str(target_path), kg)
     hydrologist.analyze_all()
     
-    # 3. Semanticist (Purpose) - Requires GOOGLE_API_KEY
+    # 3. Semanticist (Purpose)
     print("Phase 3: Semantic Analysis...")
     semanticist = SemanticistAgent(kg)
-    # For now, we only generate the brief for the core hubs
+    semantic_index = SemanticIndex(collection_name=f"purposes_{project_name}")
+    
+    # Analyze core hubs for purposes
+    hubs = [n for n, d in kg.graph.nodes(data=True) if d.get("node_type") == "module"]
+    hubs.sort(key=lambda n: kg.graph.nodes[n].get("pagerank_score", 0), reverse=True)
+    
+    for hub_id in hubs[:10]: # Analyze top 10 hubs for now
+        node_attrs = kg.graph.nodes[hub_id]
+        path = hub_id.replace("mod:", "")
+        full_path = target_path / path
+        if full_path.exists():
+            code = full_path.read_text(errors="ignore")
+            # Reconstruct ModuleNode from attributes
+            # Filter out NetworkX internal or extra attributes if necessary
+            mod_data = {k: v for k, v in node_attrs.items() if k not in ['node_type', 'pagerank_score']}
+            mod_node = ModuleNode(**mod_data)
+            purpose = semanticist.generate_purpose_statement(mod_node, code)
+            semantic_index.index_module(path, purpose)
+
     surveyor_summary = f"Analyzed {len(kg.graph.nodes)} nodes. cycles: {len(kg.graph.graph.get('circular_dependencies', []))}"
     hydrologist_summary = f"Extracted data flows across Python and SQL."
     
@@ -32,14 +81,21 @@ def main(target_path: str):
     
     # 4. Archivist (Artifacts)
     print("Phase 4: Generating Artifacts...")
-    archivist = ArchivistAgent(kg, ".")
-    hubs = [n for n, d in kg.graph.nodes(data=True) if d.get("node_type") == "module"]
-    hubs.sort(key=lambda n: kg.graph.nodes[n].get("pagerank_score", 0), reverse=True)
+    archivist = ArchivistAgent(kg, str(target_path))
+    # Override archivist output if needed, or update archivist to take output path
     
     archivist.generate_CODEBASE_md(hubs)
     archivist.generate_onboarding_brief(day_one_answers)
     
-    print("Done!")
+    # Move artifacts to project dir
+    for art in ["CODEBASE.md", "onboarding_brief.md"]:
+        src_art = target_path / art
+        if not src_art.exists():
+            src_art = Path(".") / art
+        if src_art.exists():
+            src_art.rename(output_base / art)
+    
+    print(f"Done! Results stored in {output_base}")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
