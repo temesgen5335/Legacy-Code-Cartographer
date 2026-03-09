@@ -1,0 +1,1 @@
+CREATE TABLE target_table AS SELECT * FROM source_table JOIN other_table ON id

@@ -8,3 +8,11 @@ wheels/
 
 # Virtual environments
 .venv
+
+#secret environments
+.env
+.env.local
+
+#target codebases
+targets/meltano/
+targets/airflow/
