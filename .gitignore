@@ -13,6 +13,10 @@ wheels/
 .env
 .env.local
 
+#test files
+test_gemini.py
+targets/test_repo/
+
 #target codebases
 targets/meltano/
-targets/airflow/
+targets//apache_airflow.git/

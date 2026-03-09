@@ -7,6 +7,7 @@ from src.agents.surveyor import SurveyorAgent
 from src.agents.hydrologist import HydrologistAgent
 from src.agents.semanticist import SemanticistAgent
 from src.agents.archivist import ArchivistAgent
+from src.agents.visualizer import VisualizerAgent
 from src.analyzers.semantic_index import SemanticIndex
 import subprocess
 from urllib.parse import urlparse
@@ -82,10 +83,14 @@ def main(path_or_url: str):
     # 4. Archivist (Artifacts)
     print("Phase 4: Generating Artifacts...")
     archivist = ArchivistAgent(kg, str(target_path))
-    # Override archivist output if needed, or update archivist to take output path
-    
     archivist.generate_CODEBASE_md(hubs)
     archivist.generate_onboarding_brief(day_one_answers)
+    
+    # 5. Visualizer (Graph Visualization)
+    print("Phase 5: Generating Visualizations...")
+    kg.save(str(output_base / "knowledge_graph.json"))
+    visualizer = VisualizerAgent(kg)
+    visualizer.generate_html(str(output_base / "interactive_graph.html"))
     
     # Move artifacts to project dir
     for art in ["CODEBASE.md", "onboarding_brief.md"]:
