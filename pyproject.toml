@@ -1,0 +1,21 @@
+[project]
+name = "the-brownfield-cartographer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gitpython>=3.1.46",
+    "google-generativeai>=0.8.6",
+    "httpx>=0.28.1",
+    "jedi>=0.19.2",
+    "langgraph>=1.0.10",
+    "networkx>=3.6.1",
+    "openai>=2.26.0",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0.3",
+    "sqlglot>=29.0.1",
+    "tree-sitter>=0.25.2",
+    "tree-sitter-python>=0.25.0",
+    "tree-sitter-sql>=0.3.11",
+]
