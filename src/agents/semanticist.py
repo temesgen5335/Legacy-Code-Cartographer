@@ -1,9 +1,12 @@
 import os
-import google.generativeai as genai
+from google import genai
 from pathlib import Path
 from typing import Dict, List, Set, Any, Optional
 from src.models.nodes import ModuleNode
 from src.graph.knowledge_graph import KnowledgeGraph
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class SemanticistAgent:
     """
@@ -13,18 +16,18 @@ class SemanticistAgent:
     
     def __init__(self, kg: KnowledgeGraph, api_key: Optional[str] = None):
         self.kg = kg
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if self.api_key:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.client = genai.Client(api_key=self.api_key)
+            self.model_name = 'gemini-1.5-flash'
         else:
-            self.model = None
+            self.client = None
 
     def generate_purpose_statement(self, module_node: ModuleNode, code_content: str) -> str:
         """
         Prompts the LLM to explain the business purpose of a module.
         """
-        if not self.model:
+        if not self.client:
             return "LLM Not Configured"
         
         prompt = f"""
@@ -32,14 +35,18 @@ class SemanticistAgent:
         Explain the business function and role in the system, not the implementation details.
         
         CODE:
-        {code_content[:4000]}
+        {code_content[:8000]}
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             purpose = response.text.strip()
             module_node.purpose_statement = purpose
-            self.kg.graph.nodes[f"mod:{module_node.path}"]["purpose_statement"] = purpose
+            if f"mod:{module_node.path}" in self.kg.graph:
+                self.kg.graph.nodes[f"mod:{module_node.path}"]["purpose_statement"] = purpose
             return purpose
         except Exception as e:
             return f"Error generating purpose: {e}"
@@ -48,7 +55,7 @@ class SemanticistAgent:
         """
         Synthesizes all analysis into the FDE Day-One Brief.
         """
-        if not self.model:
+        if not self.client:
             return "LLM Not Configured"
             
         prompt = f"""
@@ -70,7 +77,10 @@ class SemanticistAgent:
         """
         
         try:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             return response.text
         except Exception as e:
             return f"Error generating brief: {e}"
@@ -81,7 +91,7 @@ if __name__ == "__main__":
     # Mocking a module node for testing
     mod = ModuleNode(path="src/meltano/core/project.py", language="python")
     agent = SemanticistAgent(kg)
-    if agent.model:
+    if agent.client:
         print("Model configured. Ready for semantic analysis.")
     else:
-        print("GOOGLE_API_KEY not found. Skipping live LLM test.")
+        print("GEMINI_API_KEY not found. Skipping live LLM test.")
