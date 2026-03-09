@@ -52,7 +52,8 @@ class SurveyorAgent:
         """
         for ext in [".py", ".sql"]:
             for file_path in self.root_path.rglob(f"*{ext}"):
-                if "venv" in str(file_path) or ".git" in str(file_path):
+                # Skip venv and the actual .git metadata directory
+                if "venv" in file_path.parts or ".git" in file_path.parts:
                     continue
                 self.analyze_module(file_path)
         
@@ -118,10 +119,21 @@ class SurveyorAgent:
         pass
 
     def extract_git_velocity(self, file_path: Path, days: int = 30) -> float:
+        """Estimates change velocity using git log."""
         try:
-            cmd = f'git log --since="{days} days ago" --oneline -- "{file_path}" | wc -l'
-            output = subprocess.check_output(cmd, shell=True, cwd=self.root_path).strip()
-            return float(output)
+            # Optimized by avoiding shell=True and using a simpler command
+            result = subprocess.run(
+                ["git", "log", f"--since={days} days ago", "--oneline", "--", str(file_path)],
+                capture_output=True,
+                text=True,
+                cwd=self.root_path,
+                timeout=2 # Strict timeout per file
+            )
+            if result.returncode == 0:
+                return float(len(result.stdout.strip().split("\n"))) if result.stdout.strip() else 0.0
+            return 0.0
+        except subprocess.TimeoutExpired:
+            return 0.0
         except Exception:
             return 0.0
 

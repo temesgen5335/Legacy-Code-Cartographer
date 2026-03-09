@@ -40,11 +40,23 @@ class SemanticIndex:
         collections = self.qdrant_client.get_collections()
         exists = any(c.name == self.collection_name for c in collections.collections)
         
+        target_size = 3072 # Gemini gemini-embedding-001 size
+        
+        if exists:
+            # Check existing dimension
+            info = self.qdrant_client.get_collection(self.collection_name)
+            # Accessing size from vectors_config.params
+            current_size = info.config.params.vectors.size
+            if current_size != target_size:
+                print(f"Collection {self.collection_name} dimension mismatch ({current_size} != {target_size}). Recreating...")
+                self.qdrant_client.delete_collection(self.collection_name)
+                exists = False
+
         if not exists:
             self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=models.VectorParams(
-                    size=768, # Gemini embedding-004 size
+                    size=target_size,
                     distance=models.Distance.COSINE,
                 ),
             )
@@ -56,7 +68,7 @@ class SemanticIndex:
         
         try:
             result = self.genai_client.models.embed_content(
-                model="models/embedding-001",
+                model="models/gemini-embedding-001",
                 contents=text
             )
             return result.embeddings[0].values

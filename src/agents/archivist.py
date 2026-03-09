@@ -19,14 +19,18 @@ class ArchivistAgent:
         """
         Generates the living context file for AI agents.
         """
-        content = "# CODEBASE.md: System Context\n\n"
+        project_name = self.root_path.name
+        content = f"# CODEBASE.md: {project_name} Context\n\n"
         
         content += "## Architecture Overview\n"
-        content += "Meltano is an ELT orchestration platform written in Python and uses SQL/YAML for plugin configuration.\n\n"
+        content += f"This repository ({project_name}) is a polyglot codebase analyzed by The Brownfield Cartographer.\n\n"
         
         content += "## Critical Path (Most Imported Modules)\n"
-        for hub in surveyor_hubs[:5]:
-            content += f"- `{hub}`\n"
+        if surveyor_hubs:
+            for hub in surveyor_hubs[:5]:
+                content += f"- `{hub}`\n"
+        else:
+            content += "No major structural hubs detected.\n"
         content += "\n"
         
         content += "## Data Sources & Sinks\n"

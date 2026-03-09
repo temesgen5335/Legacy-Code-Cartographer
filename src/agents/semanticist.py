@@ -19,7 +19,7 @@ class SemanticistAgent:
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if self.api_key:
             self.client = genai.Client(api_key=self.api_key)
-            self.model_name = 'gemini-1.5-flash'
+            self.model_name = 'models/gemini-pro-latest'
         else:
             self.client = None
 
