@@ -8,7 +8,7 @@ import {
   AlertTriangle,
   CheckCircle2
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,67 +45,66 @@ const mockReport = {
 }
 
 export function Dashboard() {
-  // In a real app, query the API
-  // const { data: report, isLoading } = useQuery(['report', 'apache_airflow.git'], () => fetch('/api/discovery/summary/apache_airflow.git').then(res => res.json()))
   const report = mockReport
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-700">
       {/* Header Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Maintainability" value={`${report.health_score.maintainability}%`} icon={Activity} color="text-green-500" />
-        <StatCard title="Blast Radius" value={`${report.health_score.blast_radius_avg}%`} icon={ShieldAlert} color="text-amber-500" />
-        <StatCard title="Cycles" value={report.health_score.circular_dependencies_count} icon={Layers} color="text-blue-500" />
-        <StatCard title="Last Analyzed" value={report.last_updated} icon={Clock} color="text-slate-400" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard title="Maintainability" value={`${report.health_score.maintainability}%`} icon={Activity} color="text-[#d4af35]" />
+        <StatCard title="Blast Radius" value={`${report.health_score.blast_radius_avg}%`} icon={ShieldAlert} color="text-red-500" />
+        <StatCard title="Cycles" value={report.health_score.circular_dependencies_count} icon={Layers} color="text-amber-600" />
+        <StatCard title="Last Analysis" value={report.last_updated} icon={Clock} color="text-slate-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Summary */}
-        <div className="lg:col-span-2 space-y-8">
-          <Card className="bg-slate-900 border-slate-800 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <Zap className="text-yellow-500 w-5 h-5" /> Codebase Intel
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-sm shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#d4af35]" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#475569] flex items-center gap-2">
+                <Zap className="text-[#d4af35] w-3 h-3" /> Intelligence Summary
               </CardTitle>
-              <CardDescription className="text-slate-400">Executive executive summary and architectural assessment</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-300 leading-relaxed text-lg italic serif">
-                "{report.summary}"
+              <p className="text-[#94a3b8] leading-relaxed text-sm font-medium tracking-tight">
+                {report.summary}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden">
-            <CardHeader className="border-b border-slate-800 bg-slate-900/50">
-              <CardTitle>Architectural Hubs</CardTitle>
-              <CardDescription>Most critical modules by PageRank and Dependency Ingress</CardDescription>
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-sm shadow-xl overflow-hidden">
+            <CardHeader className="border-b border-[#1e293b] bg-[#0a0f18]/50 py-4">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-[#475569]">Architectural Hubs</CardTitle>
             </CardHeader>
             <Table>
-              <TableHeader className="bg-slate-950/50">
-                <TableRow className="hover:bg-transparent border-slate-800">
-                  <TableHead className="w-[300px]">Module Path</TableHead>
-                  <TableHead>Fan-In</TableHead>
-                  <TableHead>PageRank</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+              <TableHeader className="bg-[#0a0f18]">
+                <TableRow className="hover:bg-transparent border-[#1e293b]">
+                  <TableHead className="text-[10px] uppercase font-bold text-[#475569] py-3">Path</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold text-[#475569]">Ingress</TableHead>
+                  <TableHead className="text-[10px] uppercase font-bold text-[#475569]">Significance</TableHead>
+                  <TableHead className="text-right"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {report.architectural_hubs.map((hub) => (
-                  <TableRow key={hub.node_id} className="border-slate-800 hover:bg-slate-800/50 transition-colors">
-                    <TableCell className="font-mono text-sm py-4">
-                      {hub.path}
-                      <p className="text-xs text-slate-500 mt-1 font-sans">{hub.purpose}</p>
+                  <TableRow key={hub.node_id} className="border-[#1e293b] hover:bg-white/[0.02] transition-colors group">
+                    <TableCell className="py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-mono text-[11px] text-[#94a3b8]">{hub.path}</span>
+                        <span className="text-[10px] text-[#475569] font-medium italic">{hub.purpose}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="bg-blue-600/10 text-blue-400 border-blue-600/30">
-                        {hub.fan_in} dependents
+                      <Badge variant="outline" className="bg-[#d4af35]/5 text-[#d4af35] border-[#d4af35]/20 font-bold text-[9px] rounded-none px-2 py-0">
+                        {hub.fan_in} DEPENDENTS
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-slate-400">{(hub.pagerank_score * 100).toFixed(2)}%</TableCell>
+                    <TableCell className="font-mono text-[10px] text-[#475569]">{(hub.pagerank_score * 100).toFixed(2)}%</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="hover:bg-blue-600/20 hover:text-blue-400">
-                        <ChevronRight className="w-4 h-4" />
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 hover:bg-[#d4af35]/10 hover:text-[#d4af35]">
+                        <ChevronRight className="w-3 h-3" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -116,45 +115,45 @@ export function Dashboard() {
         </div>
 
         {/* Risk Sidebar */}
-        <div className="space-y-6">
-          <h3 className="text-sm font-semibold uppercase tracking-widest text-slate-500 px-1">Architectural Risks</h3>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-1">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#475569]">Structural Integrity Risks</h3>
+            <div className="h-[1px] flex-1 bg-[#1e293b]" />
+          </div>
+          
           {report.risk_cards.map((risk, idx) => (
             <Card key={idx} className={cn(
-              "bg-slate-900 border-l-4 shadow-lg",
-              risk.severity === 'high' ? "border-l-red-500 border-slate-800" : "border-l-amber-500 border-slate-800"
+              "bg-[#0f172a] border-[#1e293b] rounded-sm shadow-lg group hover:border-[#d4af35]/30 transition-colors",
+              risk.severity === 'high' ? "border-l-2 border-l-red-500" : "border-l-2 border-l-[#d4af35]"
             )}>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 pt-4">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="text-base font-bold">{risk.title}</CardTitle>
-                  {risk.severity === 'high' ? <AlertTriangle className="text-red-500 w-4 h-4" /> : <ShieldAlert className="text-amber-500 w-4 h-4" />}
+                  <CardTitle className="text-xs font-black uppercase tracking-wider text-[#94a3b8] group-hover:text-[#d4af35] transition-colors">{risk.title}</CardTitle>
+                  {risk.severity === 'high' ? <AlertTriangle className="text-red-500 w-3 h-3" /> : <ShieldAlert className="text-[#d4af35] w-3 h-3" />}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-slate-400 leading-normal">{risk.description}</p>
-                <div className="space-y-2">
-                  <p className="text-[10px] uppercase font-bold text-slate-600 tracking-tighter">Impact Radius</p>
-                  <div className="flex flex-wrap gap-2">
-                    {risk.impact_nodes.map(node => (
-                      <code key={node} className="text-[10px] px-2 py-0.5 bg-slate-800 rounded text-slate-300 border border-slate-700">{node}</code>
-                    ))}
-                  </div>
+              <CardContent className="space-y-4 pb-4">
+                <p className="text-[11px] text-[#475569] leading-relaxed font-medium">{risk.description}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {risk.impact_nodes.map(node => (
+                    <code key={node} className="text-[9px] px-1.5 py-0.5 bg-[#0a0f18] text-[#94a3b8] border border-[#1e293b] font-mono">{node}</code>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           ))}
 
-          <Card className="bg-blue-600/10 border-blue-600/20 shadow-xl overflow-hidden relative">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <CheckCircle2 className="w-5 h-5 text-white" />
+          <Card className="bg-[#d4af35]/5 border border-[#d4af35]/20 rounded-sm relative overflow-hidden group">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-[#d4af35] p-1.5 rounded-sm">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0f172a]" />
                 </div>
-                <h3 className="font-bold">Cartographer Verdict</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-[#d4af35]">Verdict</h3>
               </div>
-              <p className="text-sm text-blue-100/80 leading-relaxed">
+              <p className="text-[11px] text-[#94a3b8] leading-relaxed font-medium">
                 Primary data flow follows an acyclic multi-stage pipeline. Recommendations: Decouple provider settings from core models.
               </p>
-              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/10 rotate-45 translate-x-12 -translate-y-12 blur-2xl rounded-full" />
             </CardContent>
           </Card>
         </div>
@@ -165,14 +164,17 @@ export function Dashboard() {
 
 function StatCard({ title, value, icon: Icon, color }: any) {
   return (
-    <Card className="bg-slate-900 border-slate-800 hover:border-slate-700 transition-all border-b-2 hover:border-b-blue-600 group">
-      <CardContent className="p-6 flex items-center justify-between">
+    <Card className="bg-[#0f172a] border-[#1e293b] rounded-sm hover:border-[#d4af35]/50 transition-all duration-300 relative group overflow-hidden shadow-xl">
+      <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+        <Icon className="w-12 h-12" />
+      </div>
+      <CardContent className="p-5 flex items-center justify-between relative z-10">
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 group-hover:text-slate-400 transition-colors">{title}</p>
-          <p className="text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-[9px] font-black text-[#475569] uppercase tracking-[0.2em] mb-1">{title}</p>
+          <p className="text-xl font-black tracking-tighter text-[#94a3b8] group-hover:text-[#d4af35] transition-colors">{value}</p>
         </div>
-        <div className={cn("p-2 rounded-lg bg-slate-950/50 border border-slate-800 group-hover:scale-110 transition-transform", color)}>
-          <Icon className="w-6 h-6" />
+        <div className={cn("p-2 rounded-sm bg-[#0a0f18] border border-[#1e293b] group-hover:scale-105 transition-transform", color)}>
+          <Icon className="w-4 h-4" />
         </div>
       </CardContent>
     </Card>

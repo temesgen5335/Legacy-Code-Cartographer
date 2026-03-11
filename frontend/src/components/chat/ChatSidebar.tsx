@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { ChangeEvent, KeyboardEvent } from 'react'
-import { Send, Bot, User, Loader2, Sparkles, X } from 'lucide-react'
+import { X, Send, Bot, Ghost } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -13,116 +13,121 @@ interface Message {
 
 export function ChatSidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "I've indexed 'apache_airflow.git'. How can I help you navigate this codebase?" }
+    { role: 'assistant', content: 'Archival intelligence online. Specify sector for interrogation.' }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const ws = useRef<WebSocket | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Connect to WebSocket backend
-    const socket = new WebSocket(`ws://${window.location.host}/ws/chat/apache_airflow.git`)
-    ws.current = socket
-
-    socket.onmessage = (event) => {
+    ws.current = new WebSocket(`ws://${window.location.host}/api/chat`)
+    ws.current.onmessage = (event) => {
       setMessages(prev => [...prev, { role: 'assistant', content: event.data }])
       setIsLoading(false)
     }
-
-    return () => {
-      socket.close()
-    }
+    return () => ws.current?.close()
   }, [])
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   const sendMessage = () => {
-    if (!input.trim() || !ws.current) return
+    if (!input.trim() || !ws.current) return;
     
-    const userMsg = input.trim()
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }])
-    ws.current.send(userMsg)
-    setInput('')
-    setIsLoading(true)
-  }
-
-  if (!isOpen) return null
+    const userMsg = input.trim();
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    ws.current.send(userMsg);
+    setInput('');
+    setIsLoading(true);
+  };
 
   return (
-    <div className="fixed top-0 right-0 h-full w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
-      <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-blue-500 w-5 h-5" />
-          <h3 className="font-bold">Cartographer AI</h3>
+    <div className={cn(
+      "fixed inset-y-0 right-0 w-[420px] bg-[#0f172a] border-l border-[#1e293b] shadow-2xl z-50 transform transition-transform duration-500 ease-out flex flex-col",
+      isOpen ? "translate-x-0" : "translate-x-full"
+    )}>
+      {/* Header */}
+      <div className="p-8 border-b border-[#1e293b] flex items-center justify-between bg-[#0a0f18]/80 backdrop-blur-md relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#d4af35]/50 to-transparent" />
+        <div className="flex items-center gap-4">
+          <div className="bg-[#d4af35]/10 p-2.5 rounded-sm border border-[#d4af35]/20">
+            <Bot className="w-5 h-5 text-[#d4af35]" />
+          </div>
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#d4af35]">Intelligence Terminal</h3>
+            <p className="text-[9px] text-[#475569] font-black uppercase tracking-widest mt-0.5">RAG Analysis Active</p>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-500 hover:text-slate-300">
-          <X className="w-4 h-4" />
+        <Button variant="ghost" size="sm" onClick={onClose} className="text-[#475569] hover:text-[#d4af35] transition-all hover:bg-white/5 rounded-none">
+          <X className="w-5 h-5" />
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-        <div className="space-y-6">
-          {messages.map((msg, i) => (
-            <div key={i} className={cn(
-              "flex gap-4",
-              msg.role === 'user' ? "flex-row-reverse text-right" : ""
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-8">
+        <div className="space-y-8">
+          {messages.map((m, idx) => (
+            <div key={idx} className={cn(
+              "flex flex-col max-w-[90%]",
+              m.role === 'user' ? "ml-auto items-end" : "items-start"
             )}>
               <div className={cn(
-                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                msg.role === 'user' ? "bg-blue-600" : "bg-slate-800 border border-slate-700"
+                "p-5 rounded-sm text-[11px] leading-relaxed font-bold transition-all shadow-xl group border relative",
+                m.role === 'user' 
+                  ? "bg-[#d4af35] text-[#0f172a] border-[#d4af35] uppercase tracking-wider" 
+                  : "bg-[#0a0f18] text-[#94a3b8] border-[#1e293b]"
               )}>
-                {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-blue-400" />}
-              </div>
-              <div className={cn(
-                "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                msg.role === 'user' ? "bg-blue-600/10 text-blue-100 rounded-tr-none" : "bg-slate-800/50 text-slate-300 rounded-tl-none border border-slate-800"
-              )}>
-                {msg.content}
+                {m.content}
+                {m.role === 'assistant' && (
+                   <div className="mt-4 pt-4 border-t border-[#1e293b]/50 text-[9px] text-[#475569] flex items-center gap-2 uppercase font-black tracking-tighter">
+                     <Ghost className="w-3 h-3 text-[#d4af35]" /> Artifact Trace Identified
+                   </div>
+                )}
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center">
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-              </div>
-              <div className="bg-slate-800/50 rounded-2xl rounded-tl-none px-4 py-2.5 border border-slate-800">
-                <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce"></span>
-                </span>
-              </div>
+            <div className="flex items-center gap-4 text-[#d4af35] animate-pulse pl-2">
+              <div className="w-2 h-2 bg-[#d4af35] rounded-full shadow-[0_0_8px_#d4af35]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Synthesizing Context...</span>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      <div className="p-6 border-t border-slate-800 bg-slate-900/80 backdrop-blur-md">
-        <div className="relative">
+      {/* Input */}
+      <div className="p-8 border-t border-[#1e293b] bg-[#0a0f18]/90 backdrop-blur-md">
+        <div className="relative group">
           <Input 
             value={input}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && sendMessage()}
-            placeholder="Interrogate the codebase..." 
-            className="bg-slate-950 border-slate-800 pr-12 h-12 rounded-xl focus-visible:ring-blue-600"
+            placeholder="INTERROGATE CODEBASE..." 
+            className="bg-[#0f172a] border-[#1e293b] text-[#94a3b8] pr-14 h-16 rounded-none focus-visible:ring-0 focus-visible:border-[#d4af35]/50 placeholder:text-[#1e293b] placeholder:text-[10px] placeholder:font-black placeholder:tracking-[0.3em] transition-all font-mono text-xs"
           />
           <Button 
             size="sm" 
             onClick={sendMessage}
-            className="absolute right-1 top-1 bottom-1 bg-blue-600 hover:bg-blue-500 rounded-lg p-2 h-10 w-10"
+            disabled={!input.trim()}
+            className="absolute right-2 top-2 bottom-2 bg-[#d4af35] hover:bg-[#d4af35] hover:brightness-110 text-[#0f172a] rounded-none p-2 w-12 h-12 transition-all disabled:opacity-10 disabled:grayscale"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        <p className="text-[10px] text-slate-500 mt-3 text-center italic">
-          AI may hallucinate module purposes. Always verify critical paths.
-        </p>
+        <div className="flex justify-between items-center mt-4">
+          <p className="text-[9px] text-[#475569] font-black uppercase tracking-[0.2em] opacity-40">
+             Archival Protocol v4.2.1
+          </p>
+          <div className="flex gap-1.5">
+            <div className="w-1 h-1 bg-[#d4af35]/20 rounded-full" />
+            <div className="w-1 h-1 bg-[#d4af35]/40 rounded-full" />
+            <div className="w-1 h-1 bg-[#d4af35]/60 rounded-full" />
+          </div>
+        </div>
       </div>
     </div>
   )
