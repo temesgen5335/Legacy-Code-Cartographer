@@ -43,3 +43,11 @@ class NodeVirtualized(BaseModel):
     change_velocity: float
     pagerank_rank: int
     is_dead_end: bool
+
+class Archive(BaseModel):
+    """Represents an archived codebase in the landing page."""
+    name: str
+    description: str
+    sector: str
+    artifact_count: int
+    last_updated: str

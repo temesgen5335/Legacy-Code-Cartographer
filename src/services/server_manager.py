@@ -5,6 +5,8 @@ import time
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from src.services.discovery_service import router as discovery_router
+from src.services.chat_service import router as chat_router
 
 class ServerManager:
     """
@@ -17,8 +19,8 @@ class ServerManager:
         self.app = FastAPI(title="The Brownfield Cartographer API")
         
         # We will mount static files if the frontend build exists
-        self._setup_static_files()
         self._setup_routes()
+        self._setup_static_files()
 
     def _setup_static_files(self):
         # Path to pre-built frontend
@@ -34,9 +36,8 @@ class ServerManager:
         async def health():
             return {"status": "ok", "version": "0.1.0"}
             
-        # Placeholder for Archivist, Discovery, and Chat services
-        # from backend.src.services.archivist import router as archivist_router
-        # self.app.include_router(archivist_router)
+        self.app.include_router(discovery_router, prefix="/api")
+        self.app.include_router(chat_router, prefix="/api")
 
     def start_gui(self):
         """Starts the server and opens the browser."""
