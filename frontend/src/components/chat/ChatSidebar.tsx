@@ -11,9 +11,9 @@ interface Message {
   content: string
 }
 
-export function ChatSidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export function ChatSidebar({ isOpen, onClose, projectName }: { isOpen: boolean, onClose: () => void, projectName: string }) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Archival intelligence online. Specify sector for interrogation.' }
+    { role: 'assistant', content: `Archival intelligence for sector ${projectName} online. Specify interrogation parameters.` }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -21,14 +21,16 @@ export function ChatSidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!isOpen || !projectName) return
+
     // Connect to WebSocket backend
-    ws.current = new WebSocket(`ws://${window.location.host}/api/chat`)
+    ws.current = new WebSocket(`ws://${window.location.host}/api/chat/${projectName}`)
     ws.current.onmessage = (event) => {
       setMessages(prev => [...prev, { role: 'assistant', content: event.data }])
       setIsLoading(false)
     }
     return () => ws.current?.close()
-  }, [])
+  }, [isOpen, projectName])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

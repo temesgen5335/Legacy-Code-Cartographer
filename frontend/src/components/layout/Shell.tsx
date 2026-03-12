@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { LayoutDashboard, Share2, MessageSquare, Layers, Sparkles } from 'lucide-react'
+import { LayoutDashboard, Share2, MessageSquare, Layers, Sparkles, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ChatSidebar } from '@/components/chat/ChatSidebar'
@@ -8,9 +8,11 @@ interface ShellProps {
   children: React.ReactNode
   activeTab: string
   setActiveTab: (tab: string) => void
+  onBack: () => void
+  projectName: string
 }
 
-export function Shell({ children, activeTab, setActiveTab }: ShellProps) {
+export function Shell({ children, activeTab, setActiveTab, onBack, projectName }: ShellProps) {
   const [isChatOpen, setIsChatOpen] = useState(false)
 
   const navItems = [
@@ -23,6 +25,13 @@ export function Shell({ children, activeTab, setActiveTab }: ShellProps) {
       {/* Sidebar */}
       <aside className="w-72 border-r border-[#1e293b] bg-[#0f172a] flex flex-col z-20 relative">
         <div className="p-8 border-b border-[#1e293b] bg-[#0f172a]/80 backdrop-blur-sm">
+          <button 
+            onClick={onBack}
+            className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#475569] hover:text-[#d4af35] transition-colors group"
+          >
+            <ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
+            Sector Archive
+          </button>
           <h1 className="text-xl font-black tracking-tighter flex items-center gap-3 text-[#d4af35]">
             <Layers className="w-7 h-7" />
             <span className="uppercase">Cartographer</span>
@@ -34,6 +43,7 @@ export function Shell({ children, activeTab, setActiveTab }: ShellProps) {
         </div>
         
         <nav className="flex-1 p-6 space-y-2">
+          {/* ... existing navItems map ... */}
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -70,7 +80,7 @@ export function Shell({ children, activeTab, setActiveTab }: ShellProps) {
         <div className="p-6 border-t border-[#1e293b]">
           <div className="bg-[#0a0f18] p-4 rounded-sm border border-[#1e293b] relative overflow-hidden group">
             <p className="text-[9px] text-[#475569] mb-2 uppercase tracking-tighter font-black">Target Registry</p>
-            <p className="text-[11px] font-mono text-[#94a3b8] truncate relative z-10">apache_airflow.git</p>
+            <p className="text-[11px] font-mono text-[#94a3b8] truncate relative z-10">{projectName}</p>
             <div className="absolute -bottom-4 -right-4 w-12 h-12 bg-[#d4af35]/5 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700" />
           </div>
         </div>
@@ -107,7 +117,7 @@ export function Shell({ children, activeTab, setActiveTab }: ShellProps) {
         </div>
       </main>
 
-      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} projectName={projectName} />
     </div>
   )
 }

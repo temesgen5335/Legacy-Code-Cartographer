@@ -14,38 +14,30 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const mockReport = {
-  project_name: "apache_airflow.git",
-  summary: "A massive, mature data orchestration platform built on a Directed Acyclic Graph (DAG) architecture. The codebase is highly modular, with clear separation between core execution and provider-level integrations.",
-  health_score: {
-    maintainability: 82.5,
-    blast_radius_avg: 14.8,
-    circular_dependencies_count: 0
-  },
-  risk_cards: [
-    {
-      title: "Provider Sprawl",
-      severity: "medium",
-      description: "Over 70% of the codebase is contained in provider packages, leading to potential dependency hell and testing overhead.",
-      impact_nodes: ["airflow/providers/*"]
-    },
-    {
-      title: "Complex State Machine",
-      severity: "high",
-      description: "The TaskInstance state transitions are managed across multiple core modules, creating a high-risk bottleneck for scheduler performance.",
-      impact_nodes: ["airflow/models/taskinstance.py", "airflow/jobs/scheduler_job.py"]
-    }
-  ],
-  architectural_hubs: [
-    { node_id: "mod:airflow/models/dag.py", path: "airflow/models/dag.py", pagerank_score: 0.045, fan_out: 124, fan_in: 890, purpose: "Core DAG model and lifecycle management." },
-    { node_id: "mod:airflow/models/taskinstance.py", path: "airflow/models/taskinstance.py", pagerank_score: 0.042, fan_out: 89, fan_in: 1205, purpose: "Execution state and metadata for individual tasks." },
-    { node_id: "mod:airflow/settings.py", path: "airflow/settings.py", pagerank_score: 0.038, fan_out: 15, fan_in: 5402, purpose: "Global configuration and environment initialization." }
-  ],
-  last_updated: "2026-03-10"
-}
+import { useQuery } from '@tanstack/react-query'
 
-export function Dashboard() {
-  const report = mockReport
+export function Dashboard({ projectName }: { projectName: string }) {
+  const { data: report, isLoading, error } = useQuery({
+    queryKey: ['summary', projectName],
+    queryFn: () => fetch(`/api/discovery/summary/${projectName}`).then(res => {
+      if (!res.ok) throw new Error('Analysis not found')
+      return res.json()
+    })
+  })
+
+  if (isLoading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-12 h-12 border-4 border-[#d4af35]/20 border-t-[#d4af35] rounded-full animate-spin" />
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#475569]">Synthesizing Archival Knowledge...</p>
+    </div>
+  )
+
+  if (error || !report) return (
+    <div className="bg-red-500/10 border border-red-500/50 p-8 rounded-sm text-center">
+      <p className="text-red-500 font-bold uppercase tracking-widest text-sm">Failed to retrieve sector intelligence</p>
+      <p className="text-red-400/60 text-xs mt-2 font-mono">Ensure "{projectName}" analysis exists in the registry.</p>
+    </div>
+  )
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -88,7 +80,7 @@ export function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {report.architectural_hubs.map((hub) => (
+                {report.architectural_hubs.map((hub: any) => (
                   <TableRow key={hub.node_id} className="border-[#1e293b] hover:bg-white/[0.02] transition-colors group">
                     <TableCell className="py-4">
                       <div className="flex flex-col gap-1">
@@ -114,14 +106,14 @@ export function Dashboard() {
           </Card>
         </div>
 
-        {/* Risk Sidebar */}
+        {/* Risk Sidebar ... remains the same but uses dynamic data ... */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#475569]">Structural Integrity Risks</h3>
             <div className="h-[1px] flex-1 bg-[#1e293b]" />
           </div>
           
-          {report.risk_cards.map((risk, idx) => (
+          {report.risk_cards.map((risk: any, idx: number) => (
             <Card key={idx} className={cn(
               "bg-[#0f172a] border-[#1e293b] rounded-sm shadow-lg group hover:border-[#d4af35]/30 transition-colors",
               risk.severity === 'high' ? "border-l-2 border-l-red-500" : "border-l-2 border-l-[#d4af35]"
@@ -135,7 +127,7 @@ export function Dashboard() {
               <CardContent className="space-y-4 pb-4">
                 <p className="text-[11px] text-[#475569] leading-relaxed font-medium">{risk.description}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {risk.impact_nodes.map(node => (
+                  {risk.impact_nodes.map((node: string) => (
                     <code key={node} className="text-[9px] px-1.5 py-0.5 bg-[#0a0f18] text-[#94a3b8] border border-[#1e293b] font-mono">{node}</code>
                   ))}
                 </div>
@@ -152,7 +144,7 @@ export function Dashboard() {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-[#d4af35]">Verdict</h3>
               </div>
               <p className="text-[11px] text-[#94a3b8] leading-relaxed font-medium">
-                Primary data flow follows an acyclic multi-stage pipeline. Recommendations: Decouple provider settings from core models.
+                {report.data_lineage_summary}
               </p>
             </CardContent>
           </Card>

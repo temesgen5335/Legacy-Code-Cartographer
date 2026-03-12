@@ -1,46 +1,40 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Share2 } from 'lucide-react';
 import ReactFlow, {
   addEdge,
   Background,
   Controls,
   MiniMap,
-  MarkerType,
 } from 'reactflow';
 import type { Node, Edge, Connection } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-const initialNodes = [
-  {
-    id: 'mod:airflow/models/dag.py',
-    position: { x: 250, y: 5 },
-    data: { label: 'dag.py', type: 'module' },
-    style: { background: '#1e293b', color: '#fff', border: '1px solid #3b82f6', borderRadius: '8px', padding: '10px' }
-  },
-  { 
-    id: 'mod:airflow/models/taskinstance.py', 
-    position: { x: 100, y: 150 }, 
-    data: { label: 'taskinstance.py', type: 'module' },
-    style: { background: '#1e293b', color: '#fff', border: '1px solid #3b82f6', borderRadius: '8px', padding: '10px' }
-  },
-  { 
-    id: 'ds:postgres_db', 
-    position: { x: 400, y: 150 }, 
-    data: { label: 'Postgres DB', type: 'dataset' },
-    style: { background: '#450a0a', color: '#fff', border: '1px solid #ef4444', borderRadius: '8px', padding: '10px' }
-  },
-];
+import { useQuery } from '@tanstack/react-query';
 
-const initialEdges = [
-  { id: 'e1-2', source: 'mod:airflow/models/dag.py', target: 'mod:airflow/models/taskinstance.py', animated: true, markerEnd: { type: MarkerType.ArrowClosed } },
-  { id: 'e2-3', source: 'mod:airflow/models/taskinstance.py', target: 'ds:postgres_db', label: 'writes', markerEnd: { type: MarkerType.ArrowClosed } },
-];
+export function GraphView({ projectName }: { projectName: string }) {
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
 
-export function GraphView() {
-  const [nodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const { data: graphData, isLoading } = useQuery({
+    queryKey: ['graph', projectName],
+    queryFn: () => fetch(`/api/discovery/graph/${projectName}`).then(res => res.json()),
+  });
+
+  useEffect(() => {
+    if (graphData) {
+      setNodes(graphData.nodes);
+      setEdges(graphData.edges);
+    }
+  }, [graphData]);
 
   const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), []);
+
+  if (isLoading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-12 h-12 border-4 border-[#d4af35]/20 border-t-[#d4af35] rounded-full animate-spin" />
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#475569]">Mapping Sector Topology...</p>
+    </div>
+  )
 
   return (
     <div className="h-[calc(100vh-12rem)] w-full bg-[#0a0f18] rounded-sm border border-[#1e293b] overflow-hidden relative shadow-2xl animate-in zoom-in-95 duration-500">
