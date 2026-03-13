@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Layers, ChevronRight, Database, Search } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -12,16 +13,38 @@ interface Archive {
   last_updated: string
 }
 
-export function LandingPage({ onSelectProject }: { onSelectProject: (name: string) => void }) {
+export function LandingPage({ 
+  onSelectProject, 
+  onAnalyze 
+}: { 
+  onSelectProject: (name: string) => void,
+  onAnalyze: (target: string) => void
+}) {
+  const [searchTerm, setSearchTerm] = useState('')
   const { data: archives, isLoading } = useQuery<Archive[]>({
     queryKey: ['archives'],
     queryFn: () => fetch('/api/discovery/archives').then(res => res.json())
   })
 
+  const isIngestTarget = (val: string) => {
+    return val.startsWith('http') || val.includes('/') || val.includes('\\') || val.startsWith('.')
+  }
+
+  const filteredArchives = archives?.filter(a => 
+    a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.description.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || []
+
+  const handleSearchCommit = () => {
+    if (isIngestTarget(searchTerm)) {
+      onAnalyze(searchTerm)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-[#0a0f18] text-[#94a3b8] font-sans selection:bg-[#d4af35]/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0a0f18] text-[#94a3b8] font-sans selection:bg-[#d4af35]/30 overflow-x-hidden relative">
       {/* Background Grid Accent */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none" />
 
       {/* Nav */}
       <nav className="h-24 border-b border-[#1e293b] flex items-center justify-between px-12 bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
@@ -60,23 +83,59 @@ export function LandingPage({ onSelectProject }: { onSelectProject: (name: strin
         <div className="mb-12 flex items-center justify-between border-b border-[#1e293b] pb-6">
           <div className="flex flex-col">
              <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Codebase Archives</h2>
-             <p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest mt-1">Reviewing {archives?.length || 0} registered artifacts across collective sectors</p>
+             <p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest mt-1">
+               {archives?.length === 0 ? "NO ARCHIVES DETECTED IN LOCAL REGISTRY" : `Reviewing ${archives?.length || 0} registered artifacts`}
+             </p>
           </div>
-          <div className="relative group w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#475569]" />
+          <div className="relative group w-[450px]">
+            <Search className={cn(
+              "absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
+              isIngestTarget(searchTerm) ? "text-[#d4af35]" : "text-[#475569]"
+            )} />
             <input 
-              placeholder="INTERROGATE REGISTRY..." 
-              className="w-full bg-[#0f172a] border border-[#1e293b] rounded-sm py-3 pl-12 text-[10px] font-black uppercase tracking-widest text-[#94a3b8] focus:border-[#d4af35]/50 outline-none transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearchCommit()}
+              placeholder={archives?.length === 0 ? "INPUT GITHUB URL OR LOCAL PATH TO ANALYZE..." : "INTERROGATE REGISTRY OR INPUT NEW TARGET..."} 
+              className={cn(
+                "w-full bg-[#0f172a] border rounded-sm py-3 pl-12 pr-32 text-[10px] font-black uppercase tracking-widest outline-none transition-all",
+                isIngestTarget(searchTerm) ? "border-[#d4af35]/50 text-[#d4af35]" : "border-[#1e293b] text-[#94a3b8] focus:border-[#d4af35]/50"
+              )}
             />
+            {isIngestTarget(searchTerm) && (
+              <button 
+                onClick={handleSearchCommit}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-[#d4af35] text-[#0a0f18] text-[9px] font-black px-4 py-1.5 rounded-sm uppercase tracking-tighter hover:brightness-110 active:scale-95 transition-all"
+              >
+                Analyze Codebase
+              </button>
+            )}
           </div>
         </div>
 
         {/* Archives Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {isLoading ? (
-            [1,2,3].map(i => <div key={i} className="h-64 bg-[#0f172a]/50 animate-pulse rounded-sm border border-[#1e293b]" />)
-          ) : (
-            archives?.map((archive) => (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1,2,3].map(i => <div key={i} className="h-64 bg-[#0f172a]/50 animate-pulse rounded-sm border border-[#1e293b]" />)}
+          </div>
+        ) : archives?.length === 0 ? (
+          <div className="border border-dashed border-[#1e293b] rounded-sm p-32 text-center bg-[#0f172a]/20">
+            <div className="bg-[#d4af35]/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 border border-[#d4af35]/20">
+               <Database className="w-10 h-10 text-[#d4af35] opacity-50" />
+            </div>
+            <h3 className="text-xl font-black text-white uppercase tracking-widest mb-4">Registry Empty</h3>
+            <p className="max-w-md mx-auto text-sm text-[#475569] font-medium uppercase leading-relaxed mb-8">
+              No architectural sectors have been mapped. Input a target path or repository above to initiate first-contact analysis.
+            </p>
+            <div className="flex justify-center gap-4">
+               <div className="px-4 py-2 bg-[#0f172a] border border-[#1e293b] text-[9px] font-black uppercase text-[#475569]">
+                 TARGET: NONE IDENTIFIED
+               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {filteredArchives.map((archive) => (
               <Card 
                 key={archive.name} 
                 className="bg-[#0f172a] border-[#1e293b] rounded-sm group hover:border-[#d4af35]/40 transition-all duration-500 overflow-hidden cursor-pointer shadow-xl"
@@ -116,9 +175,9 @@ export function LandingPage({ onSelectProject }: { onSelectProject: (name: strin
                   </div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
 
       <footer className="h-32 border-t border-[#1e293b] bg-[#0f172a]/50 flex items-center justify-center relative overflow-hidden mt-24">
@@ -132,7 +191,7 @@ export function LandingPage({ onSelectProject }: { onSelectProject: (name: strin
 
 function Badge({ children, className }: any) {
   return (
-    <div className={cn("inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
+    <div className={cn("inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
       {children}
     </div>
   )

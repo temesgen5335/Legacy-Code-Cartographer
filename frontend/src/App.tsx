@@ -7,25 +7,36 @@ import { LandingPage } from './pages/LandingPage'
 
 const queryClient = new QueryClient()
 
+import { AnalyzePage } from './pages/AnalyzePage'
+
 function App() {
-  const [view, setView] = useState<'landing' | 'project'>('landing')
+  const [view, setView] = useState<'landing' | 'project' | 'analyze'>('landing')
   const [activeProject, setActiveProject] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [ingestTarget, setIngestTarget] = useState<string | null>(null)
 
   const handleSelectProject = (name: string) => {
     setActiveProject(name)
     setView('project')
   }
 
+  const handleStartAnalyze = (target: string) => {
+    setIngestTarget(target)
+    setView('analyze')
+  }
+
   const handleBackToLanding = () => {
     setView('landing')
     setActiveProject(null)
+    setIngestTarget(null)
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       {view === 'landing' ? (
-        <LandingPage onSelectProject={handleSelectProject} />
+        <LandingPage onSelectProject={handleSelectProject} onAnalyze={handleStartAnalyze} />
+      ) : view === 'analyze' ? (
+        <AnalyzePage target={ingestTarget || ''} onComplete={handleSelectProject} onBack={handleBackToLanding} />
       ) : (
         <Shell 
           activeTab={activeTab} 
