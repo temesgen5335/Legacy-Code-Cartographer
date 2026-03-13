@@ -10,53 +10,48 @@ class VisualizerAgent:
     def __init__(self, kg: KnowledgeGraph):
         self.kg = kg
 
-    def generate_html(self, output_path: str):
+    def generate_html(self, output_path: str, filter_type: str = "all"):
         """
         Creates an interactive HTML file representing the knowledge graph.
+        filter_type: "module" (only modules), "lineage" (func/data), or "all".
         """
-        # Initialize pyvis network
-        # height and width as strings, heading for the page
-        net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white", directed=True)
-        
-        # Configure physics for better layout of large graphs
+        net = Network(height="750px", width="100%", bgcolor="#0a0f18", font_color="white", directed=True)
         net.force_atlas_2based()
         
-        # Add nodes
+        # Filter nodes
+        relevant_nodes = []
         for node_id, node_data in self.kg.graph.nodes(data=True):
             node_type = node_data.get("node_type", "unknown")
-            label = node_id.split(":")[-1] # Simple label
             
-            # Color coding based on node type
-            color = "#97c2fc" # Default blue
-            if node_type == "module":
-                color = "#ffbb33" # Orange/Yellow
-            elif node_type == "function":
-                color = "#00ffcc" # Teal
-            elif node_type == "dataset":
-                color = "#ff4444" # Red
-            elif node_type == "transformation":
-                color = "#aa66cc" # Purple
+            if filter_type == "module" and node_type != "module":
+                continue
+            if filter_type == "lineage" and node_type not in ["function", "dataset", "transformation"]:
+                continue
+            
+            label = node_id.split(":")[-1]
+            color = "#94a3b8" 
+            if node_type == "module": color = "#d4af35" # Gold
+            elif node_type == "function": color = "#10b981" # Emerald
+            elif node_type == "dataset": color = "#ef4444" # Red
                 
-            # Node scale based on PageRank if available
             size = 10 + (node_data.get("pagerank_score", 0) * 500)
-            
-            # Add node to pyvis
-            net.add_node(
-                node_id, 
-                label=label, 
-                title=f"Type: {node_type}\nPath: {node_id}", 
-                color=color,
-                size=size
-            )
+            net.add_node(node_id, label=label, title=f"Type: {node_type}\nPath: {node_id}", color=color, size=size)
+            relevant_nodes.append(node_id)
             
         # Add edges
         for source, target, edge_data in self.kg.graph.edges(data=True):
-            edge_type = edge_data.get("edge_type", "links")
-            net.add_edge(source, target, title=edge_type)
+            if source in relevant_nodes and target in relevant_nodes:
+                edge_type = edge_data.get("edge_type", "links")
+                net.add_edge(source, target, title=edge_type, color="#1e293b", arrows="to")
             
-        # Save visualization
         net.save_graph(output_path)
-        print(f"Visualization saved to {output_path}")
+        print(f"Visualization ({filter_type}) saved to {output_path}")
+
+    def generate_module_graph(self, output_path: str):
+        self.generate_html(output_path, filter_type="module")
+
+    def generate_lineage_graph(self, output_path: str):
+        self.generate_html(output_path, filter_type="lineage")
 
 if __name__ == "__main__":
     # Test stub

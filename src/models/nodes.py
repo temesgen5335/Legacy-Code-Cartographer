@@ -11,7 +11,7 @@ class StorageType(str, Enum):
 
 class ModuleNode(BaseModel):
     path: str
-    language: str
+    language: str = "unknown"
     purpose_statement: Optional[str] = None
     domain_cluster: Optional[str] = None
     complexity_score: float = 0.0
