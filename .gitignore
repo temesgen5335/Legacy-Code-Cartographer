@@ -9,14 +9,17 @@ wheels/
 # Virtual environments
 .venv
 
-#secret environments
+#secret files
 .env
 .env.local
+docs/
+.cartography/*
+!.cartography/.gitkeep
+
+#target codebases
+targets/*
+!targets/.gitkeep
 
 #test files
 test_gemini.py
-targets/test_repo/
 
-#target codebases
-targets/meltano/
-targets//apache_airflow.git/
