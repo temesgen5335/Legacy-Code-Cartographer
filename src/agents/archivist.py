@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any
 from src.graph.knowledge_graph import KnowledgeGraph
+from src.models.schemas import TraceEvent, ModuleNode
+from src.analyzers.git_history import GitVelocitySnapshot
 
 class ArchivistAgent:
     """
@@ -9,41 +11,74 @@ class ArchivistAgent:
     Generates CODEBASE.md and onboarding_brief.md.
     """
     
-    def __init__(self, kg: KnowledgeGraph, root_path: str):
-        self.kg = kg
+    def __init__(self, kg: KnowledgeGraph | None = None, root_path: str = "."):
+        self.kg = kg or KnowledgeGraph()
         self.root_path = Path(root_path)
-        self.output_dir = Path(".cartography")
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir = self.root_path / ".cartography"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def generate_CODEBASE_md(self, surveyor_hubs: List[str]):
-        """Generates the living context file for AI agents."""
+    def write_module_graph(self, kg: KnowledgeGraph) -> Path:
+        dest = self.output_dir / "module_graph.json"
+        kg.save(dest)
+        return dest
+
+    def write_lineage_graph(self, kg: KnowledgeGraph) -> Path:
+        dest = self.output_dir / "lineage_graph.json"
+        kg.save(dest)
+        return dest
+
+    def write_semantic_index(self, modules: dict[str, ModuleNode]) -> Path:
+        dest = self.output_dir / "semantic_index.json"
+        data = {path: mod.model_dump(mode="json") for path, mod in modules.items()}
+        dest.write_text(json.dumps(data, indent=2))
+        return dest
+
+    def write_trace(self, trace: list[TraceEvent]) -> Path:
+        dest = self.output_dir / "trace.json"
+        data = [t.model_dump(mode="json") for t in trace]
+        dest.write_text(json.dumps(data, indent=2))
+        return dest
+
+    def generate_codebase_md(
+        self,
+        modules: dict[str, ModuleNode],
+        top_modules: list[str],
+        scc: list[list[str]],
+        sources: list[str],
+        sinks: list[str],
+        git_velocity_snapshot: GitVelocitySnapshot | None = None
+    ) -> Path:
+        """Generates the detailed CODEBASE.md artifact."""
         project_name = self.root_path.name
-        content = f"# CODEBASE.md: {project_name} Context\n\n"
-        content += "## Architecture Overview\n"
-        content += f"This repository ({project_name}) is a polyglot codebase analyzed by The Brownfield Cartographer.\n\n"
-        content += "## Critical Path (Most Imported Modules)\n"
-        if surveyor_hubs:
-            for hub in surveyor_hubs[:5]:
-                content += f"- `{hub}`\n"
-        else:
-            content += "No major structural hubs detected.\n"
-        content += "\n"
-        content += "## Data Sources & Sinks\n"
-        content += "Sources: Singer Taps, Databases via SQLAlchemy\n"
-        content += "Sinks: Singer Targets, Snowflake, BigQuery\n\n"
-        content += "## Complexity & Debt\n"
-        cycles = self.kg.graph.graph.get("circular_dependencies", [])
-        content += f"Circular Dependencies: {len(cycles)} detected.\n"
+        content = f"# CODEBASE.md: {project_name} Strategy Guide\n\n"
+        content += "## 🏗️ Architectural Core\n"
+        content += "The following modules represent the structural hubs of this system:\n\n"
+        for mod_id in top_modules:
+            content += f"- `{mod_id}`\n"
         
-        output_path = self.root_path / "CODEBASE.md"
+        content += "\n## 🌀 Structural Debt (Circular Dependencies)\n"
+        if scc:
+            cycles = [c for c in scc if len(c) > 1]
+            if cycles:
+                content += f"Detected {len(cycles)} circular dependency clusters.\n"
+                for i, cycle in enumerate(cycles[:5]):
+                    content += f"  - Cluster {i+1}: {' -> '.join(cycle[:3])}...\n"
+            else:
+                content += "No circular dependencies detected in the core graph.\n"
+        
+        content += "\n## 🚰 Data Ingestion & Egress\n"
+        content += f"Sources identified: {len(sources)}\n"
+        content += f"Sinks identified: {len(sinks)}\n"
+        
+        output_path = self.output_dir / "CODEBASE.md"
         output_path.write_text(content)
-        print(f"Generated {output_path}")
+        return output_path
 
-    def generate_onboarding_brief(self, day_one_answers: str):
+    def generate_onboarding_brief(self, day_one_answers: str) -> Path:
         """Generates the FDE Day-One Brief."""
-        output_path = self.root_path / "onboarding_brief.md"
+        output_path = self.output_dir / "onboarding_brief.md"
         output_path.write_text(day_one_answers)
-        print(f"Generated {output_path}")
+        return output_path
 
     def save_lineage_graph(self, output_path: Path):
         """Saves a filtered lineage graph (functions and datasets)."""
