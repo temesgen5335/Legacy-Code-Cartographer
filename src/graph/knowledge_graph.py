@@ -157,6 +157,10 @@ class KnowledgeGraph:
         rev = self.graph.reverse(copy=False)
         return sorted(nx.descendants(rev, node_id))
 
+    def strongly_connected_components(self, module_import_only: bool = False) -> list[list[str]]:
+        graph = self.module_import_graph() if module_import_only else self.graph
+        return list(nx.strongly_connected_components(graph))
+
     def to_dict(self) -> dict[str, Any]:
         return nx.node_link_data(self.graph)
 
@@ -165,10 +169,13 @@ class KnowledgeGraph:
         with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-    def load(self, path: Union[str, Path]):
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> KnowledgeGraph:
         with open(path, "r") as f:
             data = json.load(f)
-        self.graph = nx.node_link_graph(data)
+        obj = cls()
+        obj.graph = nx.node_link_graph(data)
+        return obj
 
     @staticmethod
     def _normalize_node_type(node_type: str | NodeType) -> str:

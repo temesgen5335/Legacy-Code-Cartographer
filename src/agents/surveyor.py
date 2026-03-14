@@ -3,10 +3,11 @@ import tree_sitter_python as tspython
 import tree_sitter_sql as tssql
 from tree_sitter import Language, Parser, Query, QueryCursor
 from pathlib import Path
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Set, Any, Callable
 import subprocess
 import networkx as nx
 from src.models.nodes import ModuleNode, FunctionNode
+from src.models.schemas import TraceEvent
 from src.graph.knowledge_graph import KnowledgeGraph
 
 # Initialize languages
@@ -19,9 +20,9 @@ class SurveyorAgent:
     Extracts imports, public APIs, and class hierarchies.
     """
     
-    def __init__(self, root_path: str, kg: KnowledgeGraph):
-        self.root_path = Path(root_path)
-        self.kg = kg
+    def __init__(self, root_path: str | Path | None = None, kg: KnowledgeGraph | None = None):
+        self.root_path = Path(root_path) if root_path else None
+        self.kg = kg or KnowledgeGraph()
         self.py_parser = Parser(PY_LANGUAGE)
         self.sql_parser = Parser(SQL_LANGUAGE)
 
@@ -43,21 +44,63 @@ class SurveyorAgent:
             self._analyze_sql(file_path, content, module_node)
             
         module_node.change_velocity_30d = self.extract_git_velocity(file_path)
-        self.kg.add_node(module_node, "module")
+        self.kg.add_module_node(module_node)
         return module_node
 
-    def analyze_all(self):
+    def run(
+        self, 
+        repo_path: Path, 
+        include_files: Set[str] | None = None,
+        progress_callback: Callable[[str], None] | None = None
+    ) -> tuple[KnowledgeGraph, dict[str, ModuleNode], list[TraceEvent]]:
         """
-        Recursively analyzes all Python and SQL files in the root path.
+        Runs the full structural analysis.
         """
-        for ext in [".py", ".sql"]:
-            for file_path in self.root_path.rglob(f"*{ext}"):
-                # Skip venv and the actual .git metadata directory
-                if "venv" in file_path.parts or ".git" in file_path.parts:
-                    continue
-                self.analyze_module(file_path)
+        self.root_path = repo_path
+        trace: list[TraceEvent] = []
+        modules = {}
+        
+        extensions = [".py", ".sql"]
+        files_to_analyze = []
+        
+        if include_files:
+            for rel_path in include_files:
+                p = repo_path / rel_path
+                if p.suffix in extensions and p.exists():
+                    files_to_analyze.append(p)
+        else:
+            for ext in extensions:
+                files_to_analyze.extend(list(repo_path.rglob(f"*{ext}")))
+        
+        total = len(files_to_analyze)
+        for i, file_path in enumerate(files_to_analyze):
+            if any(p in ["venv", ".git", ".cartography"] for p in file_path.parts):
+                continue
+            
+            if progress_callback:
+                progress_callback(f"Surveyor analyzing ({i+1}/{total}): {file_path.name}")
+            
+            try:
+                mod = self.analyze_module(file_path)
+                modules[mod.path] = mod
+            except Exception as e:
+                trace.append(TraceEvent(
+                    agent="surveyor",
+                    action="module_analysis_failed",
+                    evidence={"file": str(file_path), "error": str(e)},
+                    confidence="low"
+                ))
         
         self.build_import_graph()
+        
+        trace.append(TraceEvent(
+            agent="surveyor",
+            action="analysis_complete",
+            evidence={"modules_processed": len(modules), "node_count": len(self.kg.graph.nodes)},
+            confidence="high"
+        ))
+        
+        return self.kg, modules, trace
 
     def _analyze_python(self, file_path: Path, content: str, module_node: ModuleNode):
         tree = self.py_parser.parse(bytes(content, "utf8"))
@@ -111,7 +154,7 @@ class SurveyorAgent:
                             signature=name,
                             is_public_api=True
                         )
-                        self.kg.add_node(func_node, "function")
+                        self.kg.add_function_node(func_node)
         except Exception:
             pass
 
