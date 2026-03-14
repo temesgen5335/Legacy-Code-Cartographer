@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 
 interface IngestStatus {
   phase: 'INITIALIZING' | 'CLONING' | 'SURVEYOR' | 'HYDROLOGIST' | 'SEMANTICIST' | 'ARCHIVIST' | 'VISUALIZER' | 'COMPLETE' | 'ERROR'
@@ -31,15 +32,11 @@ interface LogEntry {
   type: 'info' | 'success' | 'error'
 }
 
-export function AnalyzePage({ 
-  target, 
-  onComplete, 
-  onBack 
-}: { 
-  target: string, 
-  onComplete: (name: string) => void,
-  onBack: () => void 
-}) {
+export function AnalyzePage() {
+  const navigate = useNavigate()
+  const searchParams = useSearch({ from: '/analyze' }) as { target: string }
+  const target = searchParams.target || ''
+
   const [status, setStatus] = useState<IngestStatus>({
     phase: 'INITIALIZING',
     message: 'Awaiting system handshake...',
@@ -55,6 +52,9 @@ export function AnalyzePage({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [logs])
+
+  const onBack = () => navigate({ to: '/' })
+  const onComplete = (projectName: string) => navigate({ to: `/sector/${projectName}/overview` })
 
   const startAnalysis = () => {
     setIsConfirmed(true)
@@ -80,8 +80,7 @@ export function AnalyzePage({
       addLog(data.phase, data.message, data.phase === 'ERROR' ? 'error' : (data.phase === 'COMPLETE' ? 'success' : 'info'))
       
       if (data.phase === 'COMPLETE') {
-        // Project name might have changed based on cloning, but let's assume it matches target
-        // Production logic should probably return the final project_name in the COMPLETE message
+        // We'll wait a bit then redirect or let user click
       }
     }
 

@@ -4,6 +4,8 @@ import { Layers, ChevronRight, Database, Search } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useNavigate, Link } from '@tanstack/react-router'
+import { Badge } from '@/components/ui/badge'
 
 interface Archive {
   name: string
@@ -13,14 +15,10 @@ interface Archive {
   last_updated: string
 }
 
-export function LandingPage({ 
-  onSelectProject, 
-  onAnalyze 
-}: { 
-  onSelectProject: (name: string) => void,
-  onAnalyze: (target: string) => void
-}) {
+export function LandingPage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const navigate = useNavigate()
+  
   const { data: archives, isLoading } = useQuery<Archive[]>({
     queryKey: ['archives'],
     queryFn: () => fetch('/api/discovery/archives').then(res => res.json())
@@ -37,7 +35,7 @@ export function LandingPage({
 
   const handleSearchCommit = () => {
     if (isIngestTarget(searchTerm)) {
-      onAnalyze(searchTerm)
+      navigate({ to: '/analyze', search: { target: searchTerm } })
     }
   }
 
@@ -48,12 +46,12 @@ export function LandingPage({
 
       {/* Nav */}
       <nav className="h-24 border-b border-[#1e293b] flex items-center justify-between px-12 bg-[#0f172a]/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center gap-4">
+        <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
           <div className="bg-[#d4af35] p-2 rounded-sm shadow-[0_0_15px_rgba(212,175,53,0.3)]">
             <Layers className="w-6 h-6 text-[#0f172a]" />
           </div>
           <h1 className="text-xl font-black uppercase tracking-[0.3em] text-[#d4af35]">The Brownfield Cartographer</h1>
-        </div>
+        </Link>
         <div className="flex items-center gap-8">
           {['Archives', 'Intelligence', 'Methodology', 'Settings'].map(item => (
             <button key={item} className="text-[10px] font-black uppercase tracking-[0.2em] text-[#475569] hover:text-[#d4af35] transition-colors">
@@ -139,14 +137,14 @@ export function LandingPage({
               <Card 
                 key={archive.name} 
                 className="bg-[#0f172a] border-[#1e293b] rounded-sm group hover:border-[#d4af35]/40 transition-all duration-500 overflow-hidden cursor-pointer shadow-xl"
-                onClick={() => onSelectProject(archive.name)}
+                onClick={() => navigate({ to: `/sector/${archive.name}/overview` })}
               >
                 <CardHeader className="p-8 border-b border-[#1e293b]">
                   <div className="flex justify-between items-start mb-4">
                     <div className="bg-[#0a0f18] p-3 border border-[#1e293b] group-hover:border-[#d4af35]/30 group-hover:bg-[#d4af35]/5 transition-all">
                       <Database className="w-6 h-6 text-[#475569] group-hover:text-[#d4af35]" />
                     </div>
-                    <Badge className="bg-[#d4af35]/5 text-[#d4af35] border-[#d4af35]/20 font-black text-[9px] px-3 py-1 rounded-none uppercase">
+                    <Badge variant="outline" className="bg-[#d4af35]/5 text-[#d4af35] border-[#d4af35]/20 font-black text-[9px] px-3 py-1 rounded-none uppercase">
                       Sector 0{Math.floor(Math.random() * 9) + 1}
                     </Badge>
                   </div>
@@ -185,14 +183,6 @@ export function LandingPage({
            <p className="text-[10px] font-black text-[#475569] uppercase tracking-[0.4em]">Integrated Codebase Intelligence Terminal / Build 0.4.2</p>
          </div>
       </footer>
-    </div>
-  )
-}
-
-function Badge({ children, className }: any) {
-  return (
-    <div className={cn("inline-flex items-center border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-widest transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
-      {children}
     </div>
   )
 }

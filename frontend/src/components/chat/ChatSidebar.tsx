@@ -11,7 +11,17 @@ interface Message {
   content: string
 }
 
-export function ChatSidebar({ isOpen, onClose, projectName }: { isOpen: boolean, onClose: () => void, projectName: string }) {
+export function ChatSidebar({ 
+  isOpen, 
+  onClose, 
+  projectName, 
+  isEmbedded = false 
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  projectName: string,
+  isEmbedded?: boolean 
+}) {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: `Archival intelligence for sector ${projectName} online. Specify interrogation parameters.` }
   ])
@@ -48,25 +58,28 @@ export function ChatSidebar({ isOpen, onClose, projectName }: { isOpen: boolean,
 
   return (
     <div className={cn(
-      "fixed inset-y-0 right-0 w-[420px] bg-[#0f172a] border-l border-[#1e293b] shadow-2xl z-50 transform transition-transform duration-500 ease-out flex flex-col",
-      isOpen ? "translate-x-0" : "translate-x-full"
+      isEmbedded ? "relative w-full h-full border-none translate-x-0" : "fixed inset-y-0 right-0 w-[420px] border-l transform transition-transform duration-500 ease-out",
+      "bg-[#0f172a] border-[#1e293b] shadow-2xl z-50 flex flex-col",
+      !isEmbedded && (isOpen ? "translate-x-0" : "translate-x-full")
     )}>
       {/* Header */}
-      <div className="p-8 border-b border-[#1e293b] flex items-center justify-between bg-[#0a0f18]/80 backdrop-blur-md relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#d4af35]/50 to-transparent" />
-        <div className="flex items-center gap-4">
-          <div className="bg-[#d4af35]/10 p-2.5 rounded-sm border border-[#d4af35]/20">
-            <Bot className="w-5 h-5 text-[#d4af35]" />
+      {!isEmbedded && (
+        <div className="p-8 border-b border-[#1e293b] flex items-center justify-between bg-[#0a0f18]/80 backdrop-blur-md relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#d4af35]/50 to-transparent" />
+          <div className="flex items-center gap-4">
+            <div className="bg-[#d4af35]/10 p-2.5 rounded-sm border border-[#d4af35]/20">
+              <Bot className="w-5 h-5 text-[#d4af35]" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#d4af35]">Intelligence Terminal</h3>
+              <p className="text-[9px] text-[#475569] font-black uppercase tracking-widest mt-0.5">RAG Analysis Active</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#d4af35]">Intelligence Terminal</h3>
-            <p className="text-[9px] text-[#475569] font-black uppercase tracking-widest mt-0.5">RAG Analysis Active</p>
-          </div>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-[#475569] hover:text-[#d4af35] transition-all hover:bg-white/5 rounded-none">
+            <X className="w-5 h-5" />
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="text-[#475569] hover:text-[#d4af35] transition-all hover:bg-white/5 rounded-none">
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
+      )}
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-8">
