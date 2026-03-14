@@ -10,10 +10,13 @@ import type { Node, Edge, Connection } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 import { useQuery } from '@tanstack/react-query';
+import { Input } from '@/components/ui/input';
+import { Search, X } from 'lucide-react';
 
 export function GraphView({ projectName }: { projectName: string }) {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: graphData, isLoading } = useQuery({
     queryKey: ['graph', projectName],
@@ -26,6 +29,29 @@ export function GraphView({ projectName }: { projectName: string }) {
       setEdges(graphData.edges);
     }
   }, [graphData]);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setNodes(prev => prev.map(n => ({ ...n, style: { ...n.style, opacity: 1 } })));
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const matches = nodes.filter(n => 
+      n.id.toLowerCase().includes(query) || 
+      (n.data?.label || '').toLowerCase().includes(query)
+    ).map(n => n.id);
+
+    setNodes(prev => prev.map(n => ({
+      ...n,
+      style: {
+        ...n.style,
+        opacity: matches.length === 0 || matches.includes(n.id) ? 1 : 0.2,
+        border: matches.includes(n.id) ? '2px solid #d4af35' : n.style?.border,
+        boxShadow: matches.includes(n.id) ? '0 0 15px rgba(212,175,53,0.5)' : n.style?.boxShadow
+      }
+    })));
+  }, [searchQuery]);
 
   const onConnect = useCallback((params: Connection) => setEdges((eds) => addEdge(params, eds)), []);
 
@@ -62,8 +88,27 @@ export function GraphView({ projectName }: { projectName: string }) {
 
         <div className="bg-[#0f172a]/80 backdrop-blur-sm p-4 border border-[#1e293b] rounded-sm max-w-[240px]">
           <p className="text-[10px] text-[#475569] leading-relaxed font-medium">
-            Visualizing <span className="text-[#94a3b8]">14 active artifacts</span> across the ingestion pipeline. Node size represents PageRank significance.
+            Visualizing <span className="text-[#94a3b8]">{nodes.length} active artifacts</span> across the ingestion pipeline. Node size represents PageRank significance.
           </p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative group w-64">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#475569] group-focus-within:text-[#d4af35] transition-colors" />
+           <Input 
+             placeholder="Search nodes..." 
+             className="bg-[#0f172a]/90 border-[#1e293b] focus:border-[#d4af35]/50 text-[11px] pl-9 h-10 rounded-sm font-bold tracking-tight text-[#94a3b8] placeholder:text-[#475569] placeholder:font-black placeholder:uppercase"
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+           />
+           {searchQuery && (
+             <button 
+               onClick={() => setSearchQuery('')}
+               className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#d4af35]"
+             >
+               <X className="w-3 h-3" />
+             </button>
+           )}
         </div>
       </div>
 

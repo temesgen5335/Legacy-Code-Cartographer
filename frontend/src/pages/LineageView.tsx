@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
-import { Waves, Target, AlertCircle, ArrowRight, Table, Database, Cylinder } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { Search, Target, Database, Cylinder, ArrowRight, AlertCircle, Table, Waves } from 'lucide-react'
 
 const API_BASE = 'http://127.0.0.1:5001/api'
 
 export function LineageView() {
   const { projectId } = useParams({ from: '/sector/$projectId/lineage' })
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { data: lineageRoot } = useQuery({
     queryKey: ['lineage', projectId],
@@ -42,9 +44,20 @@ export function LineageView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100vh-300px)]">
         {/* Source/Sink Explorer */}
         <div className="bg-[#0f172a] border border-[#1e293b] flex flex-col">
-          <div className="p-6 border-b border-[#1e293b] bg-[#1e293b]/20 flex items-center gap-3">
-             <Database className="w-4 h-4 text-[#d4af35]" />
-             <h3 className="text-xs font-black text-white uppercase tracking-widest">Entry & Exit Points</h3>
+          <div className="p-6 border-b border-[#1e293b] bg-[#1e293b]/20 flex flex-col gap-4">
+             <div className="flex items-center gap-3">
+                <Database className="w-4 h-4 text-[#d4af35]" />
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Entry & Exit Points</h3>
+             </div>
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-[#475569]" />
+                <Input 
+                  placeholder="Filter nodes..." 
+                  className="bg-[#0a0f18] border-[#1e293b] h-8 text-[10px] pl-8 rounded-none font-bold text-[#94a3b8]"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+             </div>
           </div>
           <div className="flex-1 overflow-auto p-4 space-y-8 custom-scrollbar">
             <section className="space-y-3">
@@ -52,7 +65,7 @@ export function LineageView() {
                 <Cylinder className="w-3 h-3" />
                 Data Sources (Entry)
               </p>
-              {lineageRoot?.sources?.map((s: string) => (
+              {lineageRoot?.sources?.filter((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase())).map((s: string) => (
                 <button 
                   key={s}
                   onClick={() => setSelectedNode(s)}
@@ -71,7 +84,7 @@ export function LineageView() {
                 <ArrowRight className="w-3 h-3 rotate-45" />
                 Data Sinks (Exit)
               </p>
-              {lineageRoot?.sinks?.map((s: string) => (
+              {lineageRoot?.sinks?.filter((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase())).map((s: string) => (
                 <button 
                   key={s}
                   onClick={() => setSelectedNode(s)}

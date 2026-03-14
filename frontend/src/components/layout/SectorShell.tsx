@@ -8,7 +8,9 @@ import {
   ChevronLeft,
   Waves,
   BookOpen,
-  MoveUpRight
+  MoveUpRight,
+  ScrollText,
+  Compass
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -63,6 +65,20 @@ export function SectorShell() {
       subLabel: 'The Archivist', 
       icon: Sparkles,
       to: `/sector/${projectId}/chat`
+    },
+    { 
+      id: 'ledger', 
+      label: 'Project Ledger', 
+      subLabel: 'Codebase.md', 
+      icon: ScrollText,
+      to: `/sector/${projectId}/docs/ledger`
+    },
+    { 
+      id: 'brief', 
+      label: 'Onboarding Brief', 
+      subLabel: 'Brief.md', 
+      icon: Compass,
+      to: `/sector/${projectId}/docs/brief`
     },
   ]
 

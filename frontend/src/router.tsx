@@ -12,6 +12,7 @@ import { StructureView } from './pages/StructureView'
 import { LineageView } from './pages/LineageView'
 import { SemanticView } from './pages/SemanticView'
 import { ChatView } from './pages/ChatView'
+import DocView from './pages/DocView'
 
 // --- Root ---
 const rootRoute = createRootRoute({
@@ -68,6 +69,18 @@ const sectorChatRoute = createRoute({
   component: ChatView,
 })
 
+const sectorLedgerRoute = createRoute({
+  getParentRoute: () => sectorShellRoute,
+  path: '/docs/ledger',
+  component: () => <DocView type="ledger" />,
+})
+
+const sectorBriefRoute = createRoute({
+  getParentRoute: () => sectorShellRoute,
+  path: '/docs/brief',
+  component: () => <DocView type="brief" />,
+})
+
 // --- Route Tree ---
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -78,6 +91,8 @@ const routeTree = rootRoute.addChildren([
     sectorLineageRoute,
     sectorSemanticRoute,
     sectorChatRoute,
+    sectorLedgerRoute,
+    sectorBriefRoute,
   ]),
 ])
 
