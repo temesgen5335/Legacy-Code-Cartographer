@@ -1,5 +1,16 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
+from enum import Enum
+from datetime import datetime
+
+from .nodes import (
+    NodeType, EdgeType, StorageType,
+    ModuleNode, DatasetNode, FunctionNode, TransformationNode,
+    GraphEdge, ImportsEdge, ProducesEdge, ConsumesEdge, CallsEdge, ConfiguresEdge
+)
+
+# --- UI / Report Models ---
 
 class RiskCard(BaseModel):
     """Represents a specific architectural or design risk."""
@@ -51,3 +62,11 @@ class Archive(BaseModel):
     sector: str
     artifact_count: int
     last_updated: str
+
+class TraceEvent(BaseModel):
+    """Event log for multi-agent reasoning traces."""
+    agent: str
+    action: str
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    confidence: str = "medium"  # "high", "medium", "low"
+    timestamp: datetime = Field(default_factory=datetime.now)
