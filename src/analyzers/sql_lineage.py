@@ -60,17 +60,33 @@ class SQLLineageAnalyzer:
                 target_datasets=list(targets),
                 transformation_type="SQL",
                 source_file=str(file_path),
-                line_range=(1, len(file_path.read_text().splitlines())),
-                sql_query_if_applicable=str(expression)[:500]
+                line_range=(1, len(sql_content.splitlines())),
+                lineage_range=(1, len(sql_content.splitlines())),
+                sql_query_if_applicable=str(expression)[:500],
+                source_dataset_ref=",".join(sources) if sources else None,
+                target_dataset_ref=",".join(targets) if targets else None
             )
-            self.kg.add_node(trans_node, "transformation")
+            self.kg.add_transformation_node(f"trans:{str(file_path)}", trans_node)
             
             # Add sources and targets as dataset nodes
             for s in sources:
-                self.kg.add_node(DatasetNode(name=s, storage_type=StorageType.TABLE), "dataset")
+                ds_s = DatasetNode(
+                    name=s, 
+                    storage_type=StorageType.TABLE,
+                    source_file=str(file_path),
+                    lineage_range=(1, len(sql_content.splitlines()))
+                )
+                self.kg.add_dataset_node(f"ds:{s}", ds_s)
                 self.kg.add_edge(f"ds:{s}", f"trans:{str(file_path)}", "CONSUMES")
             for t in targets:
-                self.kg.add_node(DatasetNode(name=t, storage_type=StorageType.TABLE), "dataset")
+                ds_t = DatasetNode(
+                    name=t, 
+                    storage_type=StorageType.TABLE,
+                    source_file=str(file_path),
+                    is_source_of_truth=True,
+                    lineage_range=(1, len(sql_content.splitlines()))
+                )
+                self.kg.add_dataset_node(f"ds:{t}", ds_t)
                 self.kg.add_edge(f"trans:{str(file_path)}", f"ds:{t}", "PRODUCES")
 
     def _detect_dialect(self, content: str) -> Optional[str]:

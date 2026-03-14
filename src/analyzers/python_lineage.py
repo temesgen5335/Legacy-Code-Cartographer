@@ -43,22 +43,36 @@ class PythonDataFlowAnalyzer:
                 
                 if method.startswith("read_"):
                     # Source
-                    self.kg.add_node(DatasetNode(name=path, storage_type=StorageType.FILE), "dataset")
+                    ds_node = DatasetNode(
+                        name=path, 
+                        storage_type=StorageType.FILE,
+                        source_file=str(file_path),
+                        lineage_range=(method_node[0].start_point[0] + 1, method_node[0].end_point[0] + 1)
+                    )
+                    self.kg.add_dataset_node(f"ds:{path}", ds_node)
                     self.kg.add_edge(f"ds:{path}", f"trans:{str(file_path)}", "CONSUMES")
                 elif method.startswith("to_"):
                     # Target
-                    self.kg.add_node(DatasetNode(name=path, storage_type=StorageType.FILE), "dataset")
+                    ds_node = DatasetNode(
+                        name=path, 
+                        storage_type=StorageType.FILE,
+                        source_file=str(file_path),
+                        lineage_range=(method_node[0].start_point[0] + 1, method_node[0].end_point[0] + 1)
+                    )
+                    self.kg.add_dataset_node(f"ds:{path}", ds_node)
                     self.kg.add_edge(f"trans:{str(file_path)}", f"ds:{path}", "PRODUCES")
                     
-                    # Also create a transformation node if it doesn't exist
+                    # Also create a transformation node
                     t_node = TransformationNode(
-                        source_datasets=[], # Would need to track variables for true flow
+                        source_datasets=[], 
                         target_datasets=[path],
                         transformation_type="Python/Pandas",
                         source_file=str(file_path),
-                        line_range=(1, 100) # simplified
+                        line_range=(method_node[0].start_point[0] + 1, method_node[0].end_point[0] + 1),
+                        lineage_range=(method_node[0].start_point[0] + 1, method_node[0].end_point[0] + 1),
+                        target_dataset_ref=path
                     )
-                    self.kg.add_node(t_node, "transformation")
+                    self.kg.add_transformation_node(f"trans:{str(file_path)}", t_node)
 
 if __name__ == "__main__":
     from src.graph.knowledge_graph import KnowledgeGraph
