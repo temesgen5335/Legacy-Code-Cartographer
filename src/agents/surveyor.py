@@ -201,8 +201,8 @@ class SurveyorAgent:
 if __name__ == "__main__":
     from src.graph.knowledge_graph import KnowledgeGraph
     kg = KnowledgeGraph()
-    surveyor = SurveyorAgent("targets/meltano", kg)
-    surveyor.analyze_all()
+    surveyor = SurveyorAgent(repo_path="targets/davidhalter_jedi.git", kg=kg)
+    surveyor.run(repo_path=Path("targets/davidhalter_jedi.git"))
     kg.save(".cartography/meltano_graph.json")
     print(f"Analysis complete. Nodes: {len(kg.graph.nodes)}, Edges: {len(kg.graph.edges)}")
     print(f"Cycles detected: {len(kg.graph.graph.get('circular_dependencies', []))}")

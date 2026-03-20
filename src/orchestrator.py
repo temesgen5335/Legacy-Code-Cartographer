@@ -6,12 +6,14 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from src.analyzers.git_history import GitVelocitySnapshot, compute_git_velocity_snapshot
 from src.agents.archivist import ArchivistAgent
 from src.agents.hydrologist import HydrologistAgent
 from src.agents.semanticist import SemanticistAgent
 from src.agents.surveyor import SurveyorAgent
+from src.agents.visualizer import VisualizerAgent
 from src.graph.knowledge_graph import KnowledgeGraph
 from src.models.schemas import ModuleNode, TraceEvent
 from src.repo import repository_metadata
@@ -26,23 +28,33 @@ class CartographyOrchestrator:
         progress_callback: Callable[[str], None] | None = None,
     ) -> None:
         self.repo_path = repo_path.resolve()
-        self.out_dir = out_dir or (self.repo_path / ".cartography")
+        
+        # Standardize project name for artifact folder
+        if repo_input and repo_input.startswith("http"):
+            parsed = urlparse(repo_input)
+            project_name = parsed.path.strip("/").replace("/", "_")
+            if project_name.endswith(".git"):
+                project_name = project_name[:-4]
+        else:
+            project_name = self.repo_path.name
+
+        # Always store in project root's .cartography folder
+        self.out_dir = out_dir or (Path.cwd() / ".cartography" / project_name)
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.state_file = self.out_dir / "state.json"
         self.repo_input = (repo_input or str(self.repo_path)).strip()
         self._progress_callback = progress_callback or self._default_progress
 
-        self.surveyor = SurveyorAgent()
-        self.hydrologist = HydrologistAgent()
-        self.semanticist = SemanticistAgent()
-        self.archivist = ArchivistAgent(KnowledgeGraph(), str(self.repo_path))
+        self.kg = KnowledgeGraph()
+        self.surveyor = SurveyorAgent(kg=self.kg)
+        self.hydrologist = HydrologistAgent(lineage_graph=self.kg)
+        self.semanticist = SemanticistAgent(kg=self.kg)
+        self.archivist = ArchivistAgent(kg=self.kg, root_path=str(self.repo_path))
 
     def analyze(self, incremental: bool = True) -> dict[str, str]:
         self._progress(f"Starting analysis for {self.repo_path}")
         stage = "bootstrap"
         trace: list[TraceEvent] = []
-        module_graph: KnowledgeGraph | None = None
-        lineage_graph: KnowledgeGraph | None = None
         modules: dict[str, ModuleNode] = {}
         day_one: dict[str, Any] = {}
         top_modules: list[str] = []
@@ -50,68 +62,71 @@ class CartographyOrchestrator:
         sources: list[str] = []
         sinks: list[str] = []
         git_velocity_90d: GitVelocitySnapshot | None = None
+        
         changed_files = self.changed_files_since_last_run() if incremental else []
         use_incremental = bool(changed_files) and self._has_previous_artifacts()
+        
         try:
             if use_incremental:
                 stage = "incremental_reanalysis"
                 self._progress(f"Incremental mode: re-analyzing {len(changed_files)} changed files.")
-                module_graph, modules, lineage_graph, tr = self._analyze_incremental(changed_files)
+                self.kg, modules, _, tr = self._analyze_incremental(changed_files)
                 trace.extend(tr)
             else:
                 stage = "surveyor"
                 self._progress("Running Surveyor agent.")
-                module_graph, modules, tr = self.surveyor.run(self.repo_path, progress_callback=self._progress)
+                _, modules, tr = self.surveyor.run(self.repo_path, progress_callback=self._progress)
                 trace.extend(tr)
+                
                 stage = "hydrologist"
                 self._progress("Running Hydrologist agent.")
-                lineage_graph, tr = self.hydrologist.run(
+                _, tr = self.hydrologist.run(
                     self.repo_path,
-                    lineage_graph=KnowledgeGraph(),
+                    lineage_graph=self.kg,
                     progress_callback=self._progress,
                 )
                 trace.extend(tr)
 
             stage = "checkpoint_structural_graphs"
             self._checkpoint_partial_artifacts(
-                module_graph=module_graph,
-                lineage_graph=lineage_graph,
+                module_graph=self.kg,
+                lineage_graph=None, # Already in self.kg
                 modules=modules,
                 trace=trace,
             )
 
             stage = "semanticist"
             self._progress("Running Semanticist agent.")
-            modules, tr = self.semanticist.run(self.repo_path, modules)
+            modules, tr = self.semanticist.run(self.repo_path, modules, progress_callback=self._progress)
             trace.extend(tr)
+            
             git_velocity_90d = compute_git_velocity_snapshot(self.repo_path, days=90)
             self._apply_git_velocity_metrics(modules, git_velocity_90d, days=90)
 
             # Inject semantic metadata into module graph.
             for path, module in modules.items():
-                if module_graph is not None and path in module_graph.graph.nodes:
-                    module_graph.graph.nodes[path].update(module.model_dump())
-
-            if module_graph is None or lineage_graph is None:
-                raise RuntimeError("Structural graphs are unavailable after analysis stage.")
+                if path in self.kg.graph.nodes:
+                    self.kg.graph.nodes[path].update(module.model_dump())
 
             stage = "day_one_synthesis"
-            pagerank = module_graph.pagerank(module_import_only=True)
+            pagerank = self.kg.pagerank(module_import_only=True)
             top_modules = [k for k, _ in sorted(pagerank.items(), key=lambda kv: kv[1], reverse=True)[:5]]
-            scc = module_graph.strongly_connected_components(module_import_only=True)
-            sources = self.hydrologist.find_sources(lineage_graph)
-            sinks = self.hydrologist.find_sinks(lineage_graph)
-            downstream_map = {m: module_graph.downstream(m) for m in top_modules}
+            scc = self.kg.strongly_connected_components(module_import_only=True)
+            sources = self.hydrologist.find_sources(self.kg)
+            sinks = self.hydrologist.find_sinks(self.kg)
+            downstream_map = {m: self.kg.downstream(m) for m in top_modules}
+            
             day_one = self.semanticist.answer_day_one_questions(
                 list(modules.values()),
                 top_modules,
                 sources,
                 sinks,
                 downstream_map,
-                module_graph,
-                lineage_graph,
+                self.kg,
+                self.kg, # lineage_graph is the same
                 git_velocity_snapshot=git_velocity_90d,
             )
+            
             trace.append(
                 TraceEvent(
                     agent="orchestrator",
@@ -130,8 +145,11 @@ class CartographyOrchestrator:
 
             stage = "final_serialization"
             self._progress(f"Serializing artifacts to {self.out_dir}")
-            module_graph_path = self.archivist.write_module_graph(module_graph)
-            lineage_graph_path = self.archivist.write_lineage_graph(lineage_graph)
+            
+            # Universal KG artifact name for DiscoveryService compatibility
+            kg_path = self.out_dir / "knowledge_graph.json"
+            self.kg.save(kg_path)
+            
             semantic_index_path = self.archivist.write_semantic_index(modules)
             codebase_path = self.archivist.generate_codebase_md(
                 modules,
@@ -144,15 +162,26 @@ class CartographyOrchestrator:
             brief_path = self.archivist.generate_onboarding_brief(day_one)
             trace_path = self.archivist.write_trace(trace)
             self._save_state()
+
+            # Generate interactive HTML visualizations
+            stage = "visualization"
+            self._progress("Generating interactive visualizations.")
+            viz = VisualizerAgent(self.kg)
+            module_html_path = self.out_dir / "module_graph.html"
+            lineage_html_path = self.out_dir / "lineage_graph.html"
+            viz.generate_module_graph(str(module_html_path))
+            viz.generate_lineage_graph(str(lineage_html_path))
+
             self._progress("Analysis complete.")
 
             return {
-                "module_graph": str(module_graph_path),
-                "lineage_graph": str(lineage_graph_path),
+                "knowledge_graph": str(kg_path),
                 "semantic_index": str(semantic_index_path),
                 "codebase_md": str(codebase_path),
                 "onboarding_brief": str(brief_path),
                 "trace": str(trace_path),
+                "module_graph_html": str(module_html_path),
+                "lineage_graph_html": str(lineage_html_path),
             }
         except Exception as exc:
             trace.append(
@@ -168,8 +197,8 @@ class CartographyOrchestrator:
             )
             self._progress(f"Analysis failed during '{stage}'; writing partial artifacts.")
             self._checkpoint_partial_artifacts(
-                module_graph=module_graph,
-                lineage_graph=lineage_graph,
+                module_graph=self.kg,
+                lineage_graph=None,
                 modules=modules,
                 trace=trace,
             )
@@ -280,12 +309,11 @@ class CartographyOrchestrator:
         include = set(changed_files)
         self._progress(f"Loading existing artifacts from {self.out_dir}")
 
-        module_graph = KnowledgeGraph.load(self.out_dir / "module_graph.json")
-        lineage_graph = KnowledgeGraph.load(self.out_dir / "lineage_graph.json")
-        modules = self._module_nodes_from_graph(module_graph)
+        kg = KnowledgeGraph.load(self.out_dir / "knowledge_graph.json")
+        modules = self._module_nodes_from_graph(kg)
 
-        self._prune_module_graph(module_graph, modules, include)
-        self._prune_lineage_graph(lineage_graph, include)
+        self._prune_module_graph(kg, modules, include)
+        self._prune_lineage_graph(kg, include)
 
         self._progress("Running Surveyor agent on changed files.")
         fresh_module_graph, fresh_modules, tr = self.surveyor.run(
@@ -303,8 +331,8 @@ class CartographyOrchestrator:
         )
         trace.extend(tr)
 
-        module_graph.graph.update(fresh_module_graph.graph)
-        lineage_graph.graph.update(fresh_lineage_graph.graph)
+        kg.graph.update(fresh_module_graph.graph)
+        kg.graph.update(fresh_lineage_graph.graph)
         modules.update(fresh_modules)
 
         trace.append(
@@ -315,7 +343,7 @@ class CartographyOrchestrator:
                 confidence="high",
             )
         )
-        return module_graph, modules, lineage_graph, trace
+        return kg, modules, None, trace
 
     def _module_nodes_from_graph(self, graph: KnowledgeGraph) -> dict[str, ModuleNode]:
         out: dict[str, ModuleNode] = {}
@@ -358,9 +386,7 @@ class CartographyOrchestrator:
     ) -> None:
         try:
             if module_graph is not None:
-                self.archivist.write_module_graph(module_graph)
-            if lineage_graph is not None:
-                self.archivist.write_lineage_graph(lineage_graph)
+                module_graph.save(self.out_dir / "knowledge_graph.json")
             if modules:
                 self.archivist.write_semantic_index(modules)
             self.archivist.write_trace(trace)
