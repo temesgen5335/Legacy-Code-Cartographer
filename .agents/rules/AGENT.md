@@ -22,3 +22,22 @@ This document serves as the primary instructions for any AI agents collaborating
 - **Project Goal**: Refer to `constitution.md`.
 - **Current Tasks**: Refer to `task.md` (artifact directory).
 - **Established Patterns**: Refer to `CONTEXT_BACKUP.md`.
+
+## 🔄 GUI/CLI Parity Mandate
+
+**Core Principle:** All business logic MUST reside in `src/core/` services.
+
+When implementing new features:
+1. **Start with Core Services**: Implement all analysis, mapping, or data generation logic in `src/core/`.
+2. **Expose via Both Interfaces**: Add corresponding endpoints/commands to both GUI and CLI.
+3. **Verify Artifact Parity**: Ensure both interfaces generate identical JSON/HTML/Markdown outputs.
+4. **No Interface-Specific Logic**: Business logic in GUI services or CLI commands is prohibited.
+
+**Allowed Interface-Specific Code:**
+- GUI: React components, FastAPI route handlers (routing only), WebSocket formatting
+- CLI: Typer command definitions, Rich console formatting, progress display
+
+**Prohibited:**
+- Duplicating analysis logic in GUI and CLI
+- Implementing features in only one interface
+- Divergent artifact generation between interfaces
