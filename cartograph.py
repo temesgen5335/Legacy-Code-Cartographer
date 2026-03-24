@@ -406,7 +406,7 @@ def _display_config(config_service: ConfigService):
     
     analysis_config = config.get("analysis", {})
     for key, value in analysis_config.items():
-        if isinstance(value, list):
+        if type(value).__name__ in ('list', 'tuple'):
             value = ", ".join(str(v) for v in value[:3]) + ("..." if len(value) > 3 else "")
         analysis_table.add_row(key.replace("_", " ").title(), str(value))
     
