@@ -454,8 +454,9 @@ def _assemble_html(
     </script>
     """
 
-    # Inject into body
-    return base_html.replace("<body>", f"<body>{ui_html}", 1)
+    # Inject UI and message handler into body
+    message_handler = _message_handler_script()
+    return base_html.replace("<body>", f"<body>{ui_html}{message_handler}", 1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -641,13 +642,18 @@ def _module_options() -> str:
       "layout": { "improvedLayout": true },
       "interaction": {
         "hover": true, "navigationButtons": true, "keyboard": true,
-        "tooltipDelay": 150, "hideEdgesOnDrag": true
+        "tooltipDelay": 150, "hideEdgesOnDrag": true,
+        "dragNodes": true, "dragView": true, "zoomView": true
       },
       "physics": {
         "enabled": true,
         "barnesHut": {
-          "gravitationalConstant": -6000, "centralGravity": 0.08,
-          "springLength": 170, "springConstant": 0.02, "damping": 0.2
+          "gravitationalConstant": -8000,
+          "centralGravity": 0.3,
+          "springLength": 95,
+          "springConstant": 0.04,
+          "damping": 0.09,
+          "avoidOverlap": 0.1
         },
         "stabilization": { "enabled": true, "iterations": 250 }
       },
@@ -710,6 +716,139 @@ def _legend_html(graph_type: str) -> str:
         'padding:12px 16px;font-family:Georgia,serif;box-shadow:0 4px 16px rgba(0,0,0,0.10);">'
         f'<div style="font-weight:700;font-size:12px;margin-bottom:6px;">{title}</div>{entries}</div>'
     )
+
+
+def _message_handler_script() -> str:
+    """
+    JavaScript for iframe-to-parent window communication.
+    Enables zoom controls, node selection, and Navigator tool integration.
+    """
+    return """
+    <script>
+    (function() {
+        // Notify parent window when graph is fully loaded
+        window.addEventListener('load', function() {
+            window.parent.postMessage({ type: 'graphLoaded' }, '*');
+        });
+        
+        // Wait for network to be ready
+        function waitForNetwork(callback) {
+            if (typeof network !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForNetwork(callback), 100);
+            }
+        }
+        
+        waitForNetwork(function() {
+            // Send node click events to parent
+            network.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const nodeData = NODE_DATA[nodeId] || {};
+                    window.parent.postMessage({
+                        type: 'nodeClick',
+                        node: {
+                            id: nodeId,
+                            label: nodeData.label || nodeId,
+                            node_type: nodeData.node_type,
+                            path: nodeData.id || nodeId,
+                            ...nodeData
+                        }
+                    }, '*');
+                }
+            });
+            
+            // Listen for commands from parent window
+            window.addEventListener('message', function(event) {
+                const action = event.data.action;
+                
+                if (action === 'zoomIn') {
+                    const currentScale = network.getScale();
+                    network.moveTo({ scale: currentScale * 1.2 });
+                } else if (action === 'zoomOut') {
+                    const currentScale = network.getScale();
+                    network.moveTo({ scale: currentScale * 0.8 });
+                } else if (action === 'fitView') {
+                    network.fit({ animation: true });
+                } else if (action === 'focusNode') {
+                    const nodeId = event.data.nodeId;
+                    if (nodeId && network.body.data.nodes.get(nodeId)) {
+                        network.focus(nodeId, { scale: 1.5, animation: true });
+                        network.selectNodes([nodeId]);
+                    }
+                } else if (action === 'blastRadius') {
+                    highlightBlastRadius(event.data.nodePath);
+                } else if (action === 'traceLineage') {
+                    highlightLineage(event.data.nodePath);
+                }
+            });
+            
+            // Highlight blast radius (downstream dependencies)
+            window.highlightBlastRadius = function(nodePath) {
+                // Find node by path
+                const nodeId = Object.keys(NODE_DATA).find(id => 
+                    NODE_DATA[id].id === nodePath || 
+                    NODE_DATA[id].path === nodePath ||
+                    id === nodePath
+                );
+                
+                if (!nodeId) return;
+                
+                const data = NODE_DATA[nodeId];
+                const downstream = data.imports || data.downstream || [];
+                
+                // Highlight in orange/red
+                const allNodes = network.body.data.nodes.getIds();
+                const updates = allNodes.map(id => {
+                    if (id === nodeId) {
+                        return { id, color: '#e74c3c', borderWidth: 3 };
+                    } else if (downstream.includes(id)) {
+                        return { id, color: '#e67e22', borderWidth: 2 };
+                    } else {
+                        return { id, color: { background: '#ecf0f1', border: '#bdc3c7' }, opacity: 0.3 };
+                    }
+                });
+                
+                network.body.data.nodes.update(updates);
+                network.selectNodes([nodeId, ...downstream]);
+                network.fit({ nodes: [nodeId, ...downstream], animation: true });
+            };
+            
+            // Highlight lineage (upstream path)
+            window.highlightLineage = function(nodePath) {
+                // Find node by path
+                const nodeId = Object.keys(NODE_DATA).find(id => 
+                    NODE_DATA[id].id === nodePath || 
+                    NODE_DATA[id].path === nodePath ||
+                    id === nodePath
+                );
+                
+                if (!nodeId) return;
+                
+                const data = NODE_DATA[nodeId];
+                const upstream = data.imported_by || data.upstream || [];
+                
+                // Highlight in blue/cyan
+                const allNodes = network.body.data.nodes.getIds();
+                const updates = allNodes.map(id => {
+                    if (id === nodeId) {
+                        return { id, color: '#3498db', borderWidth: 3 };
+                    } else if (upstream.includes(id)) {
+                        return { id, color: '#5dade2', borderWidth: 2 };
+                    } else {
+                        return { id, color: { background: '#ecf0f1', border: '#bdc3c7' }, opacity: 0.3 };
+                    }
+                });
+                
+                network.body.data.nodes.update(updates);
+                network.selectNodes([nodeId, ...upstream]);
+                network.fit({ nodes: [nodeId, ...upstream], animation: true });
+            };
+        });
+    })();
+    </script>
+    """
 
 
 def _write_empty_html(output_html: Path, message: str) -> None:

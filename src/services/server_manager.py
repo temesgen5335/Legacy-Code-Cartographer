@@ -6,6 +6,7 @@ from pathlib import Path
 from src.services.discovery_service import router as discovery_router
 from src.services.chat_service import router as chat_router
 from src.services.ingest_service import router as ingest_router
+from src.services.navigator_service import router as navigator_router
 
 class ServerManager:
     """
@@ -51,6 +52,7 @@ class ServerManager:
         self.app.include_router(discovery_router, prefix="/api")
         self.app.include_router(chat_router, prefix="/api")
         self.app.include_router(ingest_router, prefix="/api")
+        self.app.include_router(navigator_router, prefix="/api")
 
     def start_gui(self):
         """Starts the server and opens the browser."""
