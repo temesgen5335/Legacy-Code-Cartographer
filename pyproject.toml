@@ -24,11 +24,13 @@ dependencies = [
     "pyvis>=0.3.2",
     "pyyaml>=6.0.3",
     "qdrant-client>=1.17.0",
+    "rich>=13.9.4",
     "scipy>=1.17.1",
     "sqlglot>=29.0.1",
     "tree-sitter>=0.25.2",
     "tree-sitter-python>=0.25.0",
     "tree-sitter-sql>=0.3.11",
+    "typer>=0.15.1",
     "uvicorn>=0.41.0",
     "websockets>=16.0",
 ]
