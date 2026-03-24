@@ -54,11 +54,11 @@ export function AnalyzePage() {
   }, [logs])
 
   const onBack = () => navigate({ to: '/' })
-  const onComplete = (projectName: string) => navigate({ to: `/sector/${projectName}/overview` })
+  const onComplete = (projectName: string) => navigate({ to: `/codebase/${projectName}/overview` })
 
   const startAnalysis = () => {
     setIsConfirmed(true)
-    const projectName = target.split('/').pop()?.replace('.git', '') || 'unknown_sector'
+    const projectName = target.split('/').pop()?.replace('.git', '') || 'unknown_project'
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.host}/api/ingest/ws/${projectName}`
     
@@ -86,7 +86,7 @@ export function AnalyzePage() {
 
     ws.current.onerror = () => {
       setStatus(prev => ({ ...prev, phase: 'ERROR', message: 'WebSocket connection failed' }))
-      addLog('SYSTEM', 'Connection lost. Sector uplink unstable.', 'error')
+      addLog('SYSTEM', 'Connection lost. Analysis uplink unstable.', 'error')
     }
   }
 
@@ -144,7 +144,7 @@ export function AnalyzePage() {
               </div>
               <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-4">Deep Reconnaissance Required</h2>
               <p className="text-sm text-[#475569] font-medium leading-relaxed mb-12 uppercase tracking-wide">
-                You are about to initiate a multi-agent architectural excavation of the specified sector. 
+                You are about to initiate a multi-agent architectural excavation of the specified codebase. 
                 Full structural mapping, data lineage extraction, and semantic interrogation will be performed.
               </p>
               <Button 
@@ -225,7 +225,7 @@ export function AnalyzePage() {
                   onClick={() => onComplete(target.split('/').pop()?.replace('.git', '') || '')}
                   className="bg-emerald-500 text-[#0a0f18] font-black uppercase tracking-[0.2em] px-12 h-16 text-xs hover:bg-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all"
                 >
-                  Enter Sector Dashboard <ChevronRight className="ml-2 w-4 h-4" />
+                  Enter Codebase Dashboard <ChevronRight className="ml-2 w-4 h-4" />
                 </Button>
               </div>
             )}

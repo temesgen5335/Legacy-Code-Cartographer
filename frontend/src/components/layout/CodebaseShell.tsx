@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { 
   LayoutDashboard, 
-  Share2, 
   MessageSquare, 
   Layers, 
   Sparkles, 
   ChevronLeft,
-  Waves,
   BookOpen,
   MoveUpRight,
   ScrollText,
@@ -25,60 +23,53 @@ interface NavItem {
   to: string
 }
 
-export function SectorShell() {
-  const { projectId } = useParams({ from: '/sector/$projectId' })
+export function CodebaseShell() {
+  const { projectId } = useParams({ from: '/codebase/$projectId' })
   const [isChatOpen, setIsChatOpen] = useState(false)
   const router = useRouterState()
   
   const navItems: NavItem[] = [
     { 
       id: 'overview', 
-      label: 'Sector Overview', 
+      label: 'Codebase Overview', 
       subLabel: 'The Master Thinker', 
       icon: LayoutDashboard,
-      to: `/sector/${projectId}/overview`
+      to: `/codebase/${projectId}/overview`
     },
     { 
-      id: 'structure', 
-      label: 'Structural Map', 
-      subLabel: 'The Surveyor', 
-      icon: Share2,
-      to: `/sector/${projectId}/structure`
-    },
-    { 
-      id: 'lineage', 
-      label: 'Data Lineage', 
-      subLabel: 'The Hydrologist', 
-      icon: Waves,
-      to: `/sector/${projectId}/lineage`
+      id: 'navigator', 
+      label: 'Spatial Navigator', 
+      subLabel: 'Surveyor + Hydrologist', 
+      icon: Compass,
+      to: `/codebase/${projectId}/navigator`
     },
     { 
       id: 'semantic', 
       label: 'Semantic Index', 
       subLabel: 'The Semanticist', 
       icon: BookOpen,
-      to: `/sector/${projectId}/semantic`
+      to: `/codebase/${projectId}/semantic`
     },
     { 
       id: 'chat', 
       label: 'Direct Intelligence', 
       subLabel: 'The Archivist', 
       icon: Sparkles,
-      to: `/sector/${projectId}/chat`
+      to: `/codebase/${projectId}/chat`
     },
     { 
       id: 'ledger', 
       label: 'Project Ledger', 
       subLabel: 'Codebase.md', 
       icon: ScrollText,
-      to: `/sector/${projectId}/docs/ledger`
+      to: `/codebase/${projectId}/docs/ledger`
     },
     { 
       id: 'brief', 
       label: 'Onboarding Brief', 
       subLabel: 'Brief.md', 
       icon: Compass,
-      to: `/sector/${projectId}/docs/brief`
+      to: `/codebase/${projectId}/docs/brief`
     },
   ]
 
@@ -94,7 +85,7 @@ export function SectorShell() {
             className="mb-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#475569] hover:text-[#d4af35] transition-colors group"
           >
             <ChevronLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
-            Sector Archive
+            Codebase Archive
           </Link>
           <h1 className="text-xl font-black tracking-tighter flex items-center gap-3 text-[#d4af35]">
             <Layers className="w-7 h-7" />
@@ -150,7 +141,7 @@ export function SectorShell() {
         <header className="h-24 border-b border-[#1e293b] flex items-center justify-between px-10 bg-[#0f172a]/90 backdrop-blur-2xl sticky top-0 z-10 shadow-lg">
           <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black text-[#475569] uppercase tracking-[0.3em]">Sector Intelligence</span>
+              <span className="text-[10px] font-black text-[#475569] uppercase tracking-[0.3em]">{projectId}</span>
               <MoveUpRight className="w-2.5 h-2.5 text-[#475569]" />
               <span className="text-[10px] font-black text-[#d4af35] uppercase tracking-[0.3em]">{activeItem.label}</span>
             </div>

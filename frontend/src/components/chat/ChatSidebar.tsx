@@ -23,7 +23,7 @@ export function ChatSidebar({
   isEmbedded?: boolean 
 }) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: `Archival intelligence for sector ${projectName} online. Specify interrogation parameters.` }
+    { role: 'assistant', content: `Archival intelligence for ${projectName} online. Specify interrogation parameters.` }
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)

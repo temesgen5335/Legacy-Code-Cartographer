@@ -6,10 +6,9 @@ import {
 } from '@tanstack/react-router'
 import { LandingPage } from './pages/LandingPage'
 import { AnalyzePage } from './pages/AnalyzePage'
-import { SectorShell } from './components/layout/SectorShell'
-import { SectorDashboard } from './pages/SectorDashboard'
-import { StructureView } from './pages/StructureView'
-import { LineageView } from './pages/LineageView'
+import { CodebaseShell } from './components/layout/CodebaseShell'
+import { CodebaseDashboard } from './pages/CodebaseDashboard'
+import { NavigatorView } from './pages/NavigatorView'
 import { SemanticView } from './pages/SemanticView'
 import { ChatView } from './pages/ChatView'
 import DocView from './pages/DocView'
@@ -32,51 +31,45 @@ const analyzeRoute = createRoute({
   component: AnalyzePage,
 })
 
-// --- Sector Routes ---
-const sectorShellRoute = createRoute({
+// --- Codebase Routes ---
+const codebaseShellRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/sector/$projectId',
-  component: SectorShell,
+  path: '/codebase/$projectId',
+  component: CodebaseShell,
 })
 
-const sectorOverviewRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
+const codebaseOverviewRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
   path: '/overview',
-  component: SectorDashboard,
+  component: CodebaseDashboard,
 })
 
-const sectorStructureRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
-  path: '/structure',
-  component: StructureView,
+const codebaseNavigatorRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
+  path: '/navigator',
+  component: NavigatorView,
 })
 
-const sectorLineageRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
-  path: '/lineage',
-  component: LineageView,
-})
-
-const sectorSemanticRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
+const codebaseSemanticRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
   path: '/semantic',
   component: SemanticView,
 })
 
-const sectorChatRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
+const codebaseChatRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
   path: '/chat',
   component: ChatView,
 })
 
-const sectorLedgerRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
+const codebaseLedgerRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
   path: '/docs/ledger',
   component: () => <DocView type="ledger" />,
 })
 
-const sectorBriefRoute = createRoute({
-  getParentRoute: () => sectorShellRoute,
+const codebaseBriefRoute = createRoute({
+  getParentRoute: () => codebaseShellRoute,
   path: '/docs/brief',
   component: () => <DocView type="brief" />,
 })
@@ -85,14 +78,13 @@ const sectorBriefRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   analyzeRoute,
-  sectorShellRoute.addChildren([
-    sectorOverviewRoute,
-    sectorStructureRoute,
-    sectorLineageRoute,
-    sectorSemanticRoute,
-    sectorChatRoute,
-    sectorLedgerRoute,
-    sectorBriefRoute,
+  codebaseShellRoute.addChildren([
+    codebaseOverviewRoute,
+    codebaseNavigatorRoute,
+    codebaseSemanticRoute,
+    codebaseChatRoute,
+    codebaseLedgerRoute,
+    codebaseBriefRoute,
   ]),
 ])
 

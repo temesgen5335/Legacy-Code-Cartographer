@@ -50,7 +50,7 @@ export function LandingPage() {
           <div className="bg-[#d4af35] p-2 rounded-sm shadow-[0_0_15px_rgba(212,175,53,0.3)]">
             <Layers className="w-6 h-6 text-[#0f172a]" />
           </div>
-          <h1 className="text-xl font-black uppercase tracking-[0.3em] text-[#d4af35]">The Brownfield Cartographer</h1>
+          <h1 className="text-xl font-black uppercase tracking-[0.3em] text-[#d4af35]">Legacy Code Cartographer</h1>
         </Link>
         <div className="flex items-center gap-8">
           {['Archives', 'Intelligence', 'Methodology', 'Settings'].map(item => (
@@ -137,7 +137,7 @@ export function LandingPage() {
               <Card 
                 key={archive.name} 
                 className="bg-[#0f172a] border-[#1e293b] rounded-sm group hover:border-[#d4af35]/40 transition-all duration-500 overflow-hidden cursor-pointer shadow-xl"
-                onClick={() => navigate({ to: `/sector/${archive.name}/overview` })}
+                onClick={() => navigate({ to: `/codebase/${archive.name}/overview` })}
               >
                 <CardHeader className="p-8 border-b border-[#1e293b]">
                   <div className="flex justify-between items-start mb-4">
