@@ -11,7 +11,8 @@ interface DocViewProps {
 }
 
 export default function DocView({ type }: DocViewProps) {
-  const { projectId } = useParams({ from: '/sector/$projectId' })
+  const { projectId } = useParams({ from: `/codebase/$projectId/overview` }) 
+// or whatever the exact path is in your routeTree for the overview
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)

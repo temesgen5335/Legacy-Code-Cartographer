@@ -1,7 +1,7 @@
 import { useParams } from '@tanstack/react-router'
 
 export function StructureView() {
-  const { projectId } = useParams({ from: '/sector/$projectId/structure' })
+  const { projectId } = useParams({ from: '/codebase/$projectId/navigator' })
   return (
     <div className="h-full space-y-8 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">

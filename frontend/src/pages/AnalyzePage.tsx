@@ -11,7 +11,8 @@ import {
   Layers,
   Cpu,
   BrainCircuit,
-  FileCode
+  FileCode,
+  ArrowLeft
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -220,7 +221,15 @@ export function AnalyzePage() {
 
             {/* Completion View */}
             {status.phase === 'COMPLETE' && (
-              <div className="flex justify-center pt-8 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex justify-center gap-4 pt-8 animate-in slide-in-from-bottom-4 duration-500">
+                <Button 
+                  onClick={onBack}
+                  variant="outline"
+                  className="border-[#1e293b] text-[#94a3b8] font-black uppercase tracking-[0.2em] px-8 h-16 text-xs hover:bg-[#1e293b]/50 hover:text-white transition-all"
+                >
+                  <ArrowLeft className="mr-2 w-4 h-4" />
+                  Back to Archives
+                </Button>
                 <Button 
                   onClick={() => onComplete(target.split('/').pop()?.replace('.git', '') || '')}
                   className="bg-emerald-500 text-[#0a0f18] font-black uppercase tracking-[0.2em] px-12 h-16 text-xs hover:bg-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all"

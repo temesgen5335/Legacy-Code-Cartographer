@@ -9,7 +9,7 @@ import { Search, Database, Cylinder, ArrowRight } from 'lucide-react'
 const API_BASE = 'http://127.0.0.1:5001/api'
 
 export function LineageView() {
-  const { projectId } = useParams({ from: '/sector/$projectId/lineage' })
+  const { projectId } = useParams({ from: '/codebase/$projectId/navigator' })
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
