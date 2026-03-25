@@ -53,12 +53,30 @@ def ingest(target):
     """Analyze a codebase (local path or GitHub URL)."""
     run_ingest(target)
 
+# @cli.command()
+# @click.option('--port', default=5000, help='Port to run the GUI on.')
+# def gui(port):
+#     """Start the integrated Cartographer GUI."""
+#     manager = ServerManager(port=port)
+#     manager.start_gui()
+
 @cli.command()
 @click.option('--port', default=5000, help='Port to run the GUI on.')
-def gui(port):
-    """Start the integrated DeepWiki GUI."""
+@click.option('--build', is_flag=True, help='Force rebuild of the frontend before starting.')
+def gui(port, build):
+    """Start the integrated Cartographer GUI."""
+    frontend_path = Path(__file__).parent / "frontend"
+    dist_path = frontend_path / "dist"
+
+    if build or not dist_path.exists():
+        click.echo("Cleaning and rebuilding frontend...")
+        # Navigate to frontend, install deps, and build
+        subprocess.run(["npm", "install"], cwd=str(frontend_path), check=True)
+        subprocess.run(["npm", "run", "build"], cwd=str(frontend_path), check=True)
+        click.echo("Build complete.")
+
     manager = ServerManager(port=port)
     manager.start_gui()
-
+    
 if __name__ == "__main__":
     cli()
