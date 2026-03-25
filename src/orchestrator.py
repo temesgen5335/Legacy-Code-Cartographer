@@ -152,16 +152,41 @@ class CartographyOrchestrator:
             
             semantic_index_path = self.archivist.write_semantic_index(modules)
             codebase_path = self.archivist.generate_codebase_md(
-                modules,
-                top_modules,
-                scc,
-                sources,
-                sinks,
+                modules=modules,
+                kg=self.kg,
+                pagerank_scores=pagerank,
+                scc=scc,
+                sources=sources,
+                sinks=sinks,
                 git_velocity_snapshot=git_velocity_90d,
+                git_velocity_days=90,
             )
             brief_path = self.archivist.generate_onboarding_brief(day_one)
             trace_path = self.archivist.write_trace(trace)
             self._save_state()
+            
+            # Verify artifact completeness (Definition of Done)
+            is_complete, missing = self.archivist.verify_artifact_completeness()
+            if not is_complete:
+                self._progress(f"Warning: Missing artifacts: {', '.join(missing)}")
+                trace.append(
+                    TraceEvent(
+                        agent="archivist",
+                        action="artifact_verification_failed",
+                        evidence={"missing_artifacts": missing},
+                        confidence="high",
+                    )
+                )
+            else:
+                self._progress("✓ All required artifacts verified")
+                trace.append(
+                    TraceEvent(
+                        agent="archivist",
+                        action="artifact_verification_passed",
+                        evidence={"artifacts": self.archivist.required_artifacts},
+                        confidence="high",
+                    )
+                )
 
             # Generate interactive HTML visualizations
             stage = "visualization"
