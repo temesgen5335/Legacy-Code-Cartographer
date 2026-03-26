@@ -31,11 +31,19 @@ class CartographerREPL:
     """Interactive REPL for the Brownfield Cartographer."""
     
     def __init__(self):
-        self.cartography_service = CartographyService()
-        self.visualization_service = VisualizationService()
-        self.config_service = ConfigService()
+        self.config = ConfigService()
+        self.verbose = False
         self.running = True
+        self.current_project: Optional[str] = None
         self.cwd = Path.cwd()
+        
+        # Create progress callback for CartographyService
+        def progress_callback(msg: str):
+            if self.verbose:
+                console.print(f"[dim]{msg}[/dim]")
+        
+        self.cartography_service = CartographyService(progress_callback=progress_callback)
+        self.visualization_service = VisualizationService()
         
         # Command registry
         self.commands = {
@@ -224,16 +232,11 @@ Ready to map your brownfield codebase...
         console.print(f"\n[cyan]→[/cyan] Analyzing [bold]{repo_path.name}[/bold]...")
         console.print(f"[dim]Mode: {'Incremental' if incremental else 'Full'}[/dim]\n")
         
-        def progress_callback(msg: str):
-            if verbose:
-                console.print(f"[dim]{msg}[/dim]")
-        
         try:
             result = self.cartography_service.analyze_repository(
                 repo_path=repo_path,
                 repo_input=target,
                 incremental=incremental,
-                progress_callback=progress_callback,
             )
             
             # Display results
