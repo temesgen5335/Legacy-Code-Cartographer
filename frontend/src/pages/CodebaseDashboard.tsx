@@ -53,7 +53,8 @@ export function CodebaseDashboard() {
   const { data: codebaseMd } = useQuery({
     queryKey: ['artifact', projectId, 'CODEBASE.md'],
     queryFn: async () => {
-      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/CODEBASE.md`)
+      // Cache busting to prevent loading old 404s
+      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/CODEBASE.md?t=${Date.now()}`)
       return resp.data
     },
     enabled: !!projectId
@@ -62,7 +63,8 @@ export function CodebaseDashboard() {
   const { data: briefMd } = useQuery({
     queryKey: ['artifact', projectId, 'ONBOARDING_BRIEF.md'],
     queryFn: async () => {
-      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/ONBOARDING_BRIEF.md`)
+      // Cache busting to prevent loading old 404s
+      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/ONBOARDING_BRIEF.md?t=${Date.now()}`)
       return resp.data
     },
     enabled: !!projectId
@@ -71,7 +73,8 @@ export function CodebaseDashboard() {
   const { data: traceData } = useQuery({
     queryKey: ['trace', projectId],
     queryFn: async () => {
-      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/trace.json`)
+      // Cache busting to prevent loading old 404s
+      const resp = await axios.get(`${API_BASE}/projects/${projectId}/artifacts/trace.json?t=${Date.now()}`)
       return resp.data
     },
     enabled: !!projectId

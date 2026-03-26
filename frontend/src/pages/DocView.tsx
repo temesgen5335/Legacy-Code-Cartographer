@@ -24,7 +24,9 @@ export default function DocView({ type }: DocViewProps) {
         // In a real app, this would be an API call
         // For now we assume the files are served by the backend
         const fileName = type === 'ledger' ? 'CODEBASE.md' : 'ONBOARDING_BRIEF.md'
-        const response = await fetch(`http://localhost:5001/api/projects/${projectId}/artifacts/${fileName}`)
+        // Add cache busting timestamp to prevent loading cached 404s
+        const timestamp = Date.now()
+        const response = await fetch(`http://localhost:5001/api/projects/${projectId}/artifacts/${fileName}?t=${timestamp}`)
         if (response.ok) {
           const text = await response.text()
           setContent(text)
