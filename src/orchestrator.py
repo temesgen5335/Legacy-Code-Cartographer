@@ -49,7 +49,7 @@ class CartographyOrchestrator:
         self.surveyor = SurveyorAgent(kg=self.kg)
         self.hydrologist = HydrologistAgent(lineage_graph=self.kg)
         self.semanticist = SemanticistAgent(kg=self.kg)
-        self.archivist = ArchivistAgent(kg=self.kg, root_path=str(self.repo_path))
+        self.archivist = ArchivistAgent(kg=self.kg, root_path=str(self.repo_path), output_dir=self.out_dir)
 
     def analyze(self, incremental: bool = True) -> dict[str, str]:
         self._progress(f"Starting analysis for {self.repo_path}")

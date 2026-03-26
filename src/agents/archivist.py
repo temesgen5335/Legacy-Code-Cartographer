@@ -18,10 +18,11 @@ class ArchivistAgent:
     - Maintain audit trail with confidence levels
     """
     
-    def __init__(self, kg: KnowledgeGraph | None = None, root_path: str = "."):
+    def __init__(self, kg: KnowledgeGraph | None = None, root_path: str = ".", output_dir: Path | None = None):
         self.kg = kg or KnowledgeGraph()
         self.root_path = Path(root_path)
-        self.output_dir = self.root_path / ".cartography"
+        # Use provided output_dir (from Orchestrator) or fallback to root .cartography
+        self.output_dir = output_dir or (Path.cwd() / ".cartography" / Path(root_path).name)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.required_artifacts = [
             "knowledge_graph.json",

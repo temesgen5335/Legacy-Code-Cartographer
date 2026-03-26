@@ -196,13 +196,13 @@ async def get_semantic_index(project_name: str):
     
     return modules
 
-@router.get("/graph/{project_name}")
+@router.get("/graph/{project_name}/module")
 async def get_graph(project_name: str):
     # (Existing graph endpoint logic updated to use KnowledgeGraph)
     from src.graph.knowledge_graph import KnowledgeGraph
     kg_path = CARTOGRAPHY_DIR / project_name / "knowledge_graph.json"
     if not kg_path.exists():
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail=f"Knowledge graph not found at {kg_path}")
     
     kg = KnowledgeGraph()
     kg.load(kg_path)
@@ -231,16 +231,19 @@ async def get_graph(project_name: str):
         
     return {"nodes": rf_nodes, "edges": rf_edges}
 
-@router.get("/graph/html/{project_name}")
-async def get_graph_html(project_name: str):
+@router.get("/graph/{project_name}/module_graph.html")
+async def get_module_graph_html(project_name: str):
     """
     Serves the interactive module graph HTML.
     """
     path = CARTOGRAPHY_DIR / project_name / "module_graph.html"
     if not path.exists():
-        raise HTTPException(status_code=404, detail="Module graph HTML not found")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Module graph HTML not found at {path}. Ensure analysis completed successfully."
+        )
         
-    return Response(content=path.read_text(encoding="utf-8"), media_type="text/html")
+    return Response(content=path.read_text(), media_type="text/html")
 
 @router.get("/projects/{project_name}/artifacts/{file_name}")
 async def get_artifact(project_name: str, file_name: str):
@@ -255,7 +258,28 @@ async def get_artifact(project_name: str, file_name: str):
         elif file_name == "ONBOARDING_BRIEF.md":
             path = CARTOGRAPHY_DIR / project_name / "onboarding_brief.md"
             
+        if not path.exists():
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Artifact '{file_name}' not found at {CARTOGRAPHY_DIR / project_name}. Available files: {list((CARTOGRAPHY_DIR / project_name).glob('*')) if (CARTOGRAPHY_DIR / project_name).exists() else 'directory not found'}"
+            )
+        
+    return Response(content=path.read_text(), media_type="text/markdown")
+
+@router.get("/docs/{project_name}/{file_name}")
+async def get_doc_file(project_name: str, file_name: str):
+    path = CARTOGRAPHY_DIR / project_name / file_name
     if not path.exists():
-        raise HTTPException(status_code=404, detail=f"Artifact {file_name} not found")
+        # Try case-insensitive or common variations
+        if file_name == "CODEBASE.md":
+            path = CARTOGRAPHY_DIR / project_name / "codebase.md"
+        elif file_name == "ONBOARDING_BRIEF.md":
+            path = CARTOGRAPHY_DIR / project_name / "onboarding_brief.md"
+            
+        if not path.exists():
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Document '{file_name}' not found at {CARTOGRAPHY_DIR / project_name}. Available files: {list((CARTOGRAPHY_DIR / project_name).glob('*')) if (CARTOGRAPHY_DIR / project_name).exists() else 'directory not found'}"
+            )
         
     return Response(content=path.read_text(), media_type="text/markdown")
